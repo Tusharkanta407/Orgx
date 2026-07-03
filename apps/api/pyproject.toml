@@ -1,0 +1,19 @@
+[project]
+name = "orgx-api"
+version = "0.1.0"
+description = "FastAPI backend for Orgx"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic",
+    "fastapi",
+    "passlib[bcrypt]",
+    "psycopg[binary]",
+    "pydantic-settings",
+    "python-jose[cryptography]",
+    "sqlalchemy",
+    "uvicorn[standard]",
+]
+
+[tool.alembic]
+script_location = "alembic"
+prepend_sys_path = "."

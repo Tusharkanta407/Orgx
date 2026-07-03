@@ -1,221 +1,167 @@
 # Orgx
 
-Orgx is a B2B workforce platform for companies that need trustworthy attendance, payroll approval, and a tamper-evident audit trail without adding unnecessary operational or compliance risk.
+Orgx is a B2B attendance, payroll, and audit platform for companies that want verified employee check-ins, manager and HR approval gates, tamper-evident records, and crypto payroll settlement to employee wallets.
 
-The idea is simple: we provide client companies with a system that verifies employee attendance, stores records in a traceable audit log, calculates payroll, routes approvals through managers and HR, and settles payouts through standard payment rails such as bank transfer or UPI.
+The platform is intended for client companies. Orgx helps them verify attendance, calculate payroll from approved records, route approvals through the right business roles, and disburse salary to employee `MetaMask` or compatible `EVM` wallets. Employees can later convert their received crypto into local currency such as rupees or dollars using external off-ramp services.
 
-## Vision
+## Product Overview
 
-Orgx is designed for companies that want:
+Orgx combines four core capabilities:
 
-- reliable employee attendance capture
-- stronger verification than a basic punch-in system
-- payroll linked to validated attendance
-- manager and HR approval gates
-- a full audit trail for internal review or external audit
-- no crypto wallet in the salary disbursement path
+- verified attendance capture
+- payroll calculation from approved attendance data
+- crypto payout to employee wallets
+- full auditability with tamper-evident records
 
-This keeps the useful parts of the original idea:
+The product keeps the original strengths of the concept:
 
-- attendance verification
-- tamper-evident records
-- full auditability
-- manager and HR approval before payroll settlement
+- face and location-based attendance verification
+- manager and HR approval before payroll release
+- traceable payroll actions
+- a complete audit trail for disputes, review, and compliance checks
 
-And removes the parts that add complexity without helping the business:
-
-- no blockchain transaction per attendance event
-- no salary payout through crypto
-- no unnecessary compliance exposure in the disbursement flow
-
-## Core Product Flow
+## Core Flow
 
 ### 1. Employee attendance
 
-An employee checks in through the Orgx mobile experience.
+Employees use a mobile-first Orgx web experience to check in and check out.
 
-Attendance can be verified using one or more of the following methods:
-
-- face verification
-- GPS / geofence validation
-- device-based validation
-
-For the MVP, the strongest default flow is:
+The default MVP attendance validation flow is:
 
 1. employee taps check-in
 2. system captures live face data and device GPS
-3. face-match service compares the live image to the enrolled reference
-4. geofence check confirms the employee is within the allowed office or site radius
+3. face-match provider compares the live capture to the enrolled reference
+4. geofence validation checks whether the employee is inside the allowed office or site boundary
 5. both checks must pass for attendance to be accepted
 6. accepted attendance is written to the backend and audit log
-7. if validation fails, the employee sees the reason and can retry
+7. rejected attendance returns a visible reason and allows retry
 
-### 2. Backend processing
+### 2. System of record
 
-The backend receives verified attendance events and stores them in Postgres as the system of record.
+`Postgres` is the operational source of truth for:
 
-Postgres holds:
-
-- employee and company data
-- attendance records
-- leave and payroll data
-- payroll approvals
+- companies
+- users and roles
+- employees
+- locations and geofences
+- attendance events
+- payroll periods and payroll runs
+- approval actions
+- payout records
 - audit records
 
 ### 3. Tamper-evident audit trail
 
-Each audit record is linked to the previous one using a hash chain. This creates a tamper-evident history inside the database without requiring a public blockchain for every record.
+Every critical business action is written to a hash-chained audit log in `Postgres`.
 
-If independent timestamping is needed, Orgx can optionally anchor the daily root hash to Polygon:
+This includes:
 
-- one Polygon transaction per day
-- not one transaction per attendance record
-- used only to prove that a set of records existed at a point in time
+- attendance acceptance or rejection
+- manager approvals
+- HR approvals
+- payroll finalization
+- payout initiation
+- on-chain transaction status updates
 
-This is the valid use of public-chain anchoring in the system: external proof for the audit trail, not payroll execution.
+Each audit record links to the previous one using hashes, creating a tamper-evident chain. A later version may optionally anchor a daily root hash to a public chain such as `Polygon` for independent timestamping.
 
-### 4. Payroll flow
+### 4. Payroll and payout
 
-Payroll is generated from approved attendance and leave data.
+Payroll is generated from approved attendance and recorded leave inputs.
 
-The approval path remains:
+The payroll flow is:
 
-1. attendance and payroll data are compiled
+1. attendance data is compiled for a payroll period
 2. manager reviews and approves
 3. HR reviews and approves
 4. payroll rules engine calculates final payout
-5. payment gateway executes settlement
-6. employee receives money in bank account or UPI
+5. Orgx prepares a crypto payout instruction
+6. payout is sent to the employee's `MetaMask` or compatible `EVM` wallet
+7. employee may convert the received crypto into local currency externally
 
-Supported payment rails can include:
+For the MVP, Orgx should support a controlled allowlist of tokens rather than unrestricted assets. A stablecoin-first approach is recommended for predictable payroll value, while keeping the architecture extensible for other approved tokens later.
 
-- Razorpay
-- Cashfree
-- NEFT / bank transfer
-- UPI
+## Why This Design Exists
 
-There is no crypto wallet in the disbursement path.
+Orgx is designed for companies that want:
 
-## Architecture Summary
-
-Orgx has two important branches in the architecture:
-
-### Left branch: audit and proof
-
-- records are stored in Postgres
-- audit entries are chained using hashes
-- a daily root hash may be anchored to Polygon
-- auditors or regulators can verify integrity if needed
-
-### Right branch: real money movement
-
-- payroll is calculated from attendance and rules
-- manager and HR approvals are required
-- payment happens through standard payment gateways
-- money lands in bank accounts or UPI, not wallets
-
-## Why This Design Makes Sense
-
-This approach is practical for an MVP and safer for real clients because it:
-
-- keeps the verification and audit strengths
-- reduces engineering complexity
-- avoids unnecessary on-chain cost
-- avoids introducing crypto into salary payments
-- aligns better with enterprise and compliance expectations
-- remains extensible if stronger external audit proof is needed later
+- stronger attendance proof than a basic punch-in app
+- a clear approval path before money moves
+- on-chain payout instead of bank or UPI settlement
+- tamper-evident records of who did what and when
+- a reusable system that can be offered to multiple client companies
 
 ## MVP Scope
 
-The MVP should focus on the smallest version that proves value to client companies.
+The MVP focuses on the smallest product that proves the full loop for a pilot company.
 
-### Recommended MVP modules
+### In scope
 
-- company onboarding
+- company setup for a pilot client
 - employee onboarding
-- face enrollment
-- office or site geofence setup
+- face enrollment metadata capture
+- geofence and location setup
 - employee check-in and check-out
-- attendance dashboard
-- approval workflow for manager and HR
-- payroll calculation based on attendance and leave inputs
-- payment gateway integration
+- attendance review dashboard
+- manager approval flow
+- HR approval flow
+- payroll calculation from attendance and leave inputs
+- employee wallet registration and verification
+- crypto payout execution to `MetaMask` / `EVM` wallets
+- payout status tracking
 - audit log viewer
 
-### Recommended MVP stack
+### Recommended stack
 
-If you want to build quickly, a good MVP path is:
-
-- `Next.js` for the web dashboard and admin portal
+- `Next.js` for employee, manager, HR, and admin interfaces
 - `FastAPI` for backend APIs and business logic
-- `Postgres` as the source of truth
-- a face-match API or provider for identity verification
-- GPS/geofence validation in the client app
-
-Notes:
-
-- `Next.js` is strong for the company admin panel, HR dashboard, and manager approval flows
-- if employee mobile use is essential from day one, add a mobile app later or use a lightweight mobile-first web experience first
-- `FastAPI` works well for verification workflows, audit logic, payroll rules, and integration APIs
+- `Postgres` for operational data and audit records
+- face-match provider for biometric verification
+- `EVM` RPC integration for wallet payout and transaction tracking
 
 ## Business Model
 
-Orgx is intended as a platform for client companies.
+Orgx is a reusable platform for client companies, not a one-off internal tool.
 
-That means we do not build a one-off tool for a single business. We build a reusable system that any company can use, with tenant-specific data and configuration such as:
+Each company can have its own:
 
-- office locations and geofences
-- departments and reporting managers
-- payroll rules
-- leave policies
-- employee rosters
+- employees
+- reporting structure
+- locations and geofences
+- payroll settings
+- approved payout token policy
 - approval workflows
 
-In later versions, this should evolve into a multi-tenant SaaS architecture.
+The MVP can start with one pilot company, but the backend and schema should stay tenant-ready from the beginning.
 
-## Example End-to-End Flow
+## Guiding Product Rules
 
-1. a company signs up to Orgx
-2. the company adds employees, managers, HR, office locations, and payroll rules
-3. each employee enrolls identity data for verification
-4. the employee checks in from an approved location
-5. Orgx validates face match and geofence
-6. successful attendance is stored and added to the tamper-evident audit log
-7. payroll period closes
-8. manager approves
-9. HR approves
-10. payroll engine calculates payouts
-11. payment gateway settles to bank account or UPI
-12. audit history remains available for review, dispute handling, and compliance
+- attendance is accepted only when required validations pass
+- payroll cannot move to payout without manager and HR approval
+- payout goes to the employee wallet on record
+- every critical state change must create an audit log entry
+- conversion from crypto to fiat happens outside Orgx in the MVP
 
-## Long-Term Extensions
+## Documentation
 
-After the MVP, Orgx can grow into:
+The next layer of this repository is the formal MVP documentation:
 
-- multi-tenant SaaS for many companies
-- advanced fraud detection
-- shift scheduling
-- leave and reimbursement workflows
-- compliance reporting
-- auditor verification tools
-- daily root-hash proof explorer
-- integrations with ERP, HRMS, and accounting platforms
-
-## Positioning
-
-Orgx is best described as:
-
-> a verifiable attendance and payroll platform for businesses, with strong approval workflows, tamper-evident records, and standard financial settlement rails
+- `docs/prd.md`
+- `docs/features.md`
+- `docs/architecture.md`
+- `docs/data-model.md`
+- `docs/api-spec.md`
+- `docs/mvp-roadmap.md`
 
 ## Status
 
-This repository currently represents the product definition and MVP direction for Orgx.
+This repository currently holds the product definition for the Orgx MVP.
 
-The next implementation phase should turn this into:
+The next implementation phase will turn the documentation into:
 
-- product requirements
-- database schema
-- API design
+- a project scaffold
+- backend services
 - frontend flows
-- tenant model
-- payroll and audit modules
+- tenant-ready data models
+- payroll and wallet payout modules
+- audit and verification utilities

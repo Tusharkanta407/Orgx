@@ -1,6 +1,6 @@
 # Orgx
 
-Orgx is a B2B attendance, payroll, and audit platform for companies that want verified employee check-ins, manager and HR approval gates, tamper-evident records, and crypto payroll settlement to employee wallets.
+Orgx is a B2B attendance, payroll, and audit platform for companies that want verified employee check-ins, manager and HR approval gates, tamper-evident records, and crypto payroll settlement to approved employee wallets.
 
 The platform is intended for client companies. Orgx helps them verify attendance, calculate payroll from approved records, route approvals through the right business roles, and disburse salary to employee `MetaMask` or compatible `EVM` wallets. Employees can later convert their received crypto into local currency such as rupees or dollars using external off-ramp services.
 
@@ -74,9 +74,9 @@ The payroll flow is:
 1. attendance data is compiled for a payroll period
 2. manager reviews and approves
 3. HR reviews and approves
-4. payroll rules engine calculates final payout
-5. Orgx prepares a crypto payout instruction
-6. payout is sent to the employee's `MetaMask` or compatible `EVM` wallet
+4. payroll rules engine calculates final payout in a fixed base currency
+5. Orgx marks the payroll item as payout-ready by snapshotting the approved wallet, conversion rate, and token amount for that item
+6. Orgx creates and submits a crypto payout instruction from that snapshotted payroll item to the employee's verified `MetaMask` or compatible `EVM` wallet
 7. employee may convert the received crypto into local currency externally
 
 For the MVP, Orgx should support a controlled allowlist of tokens rather than unrestricted assets. A stablecoin-first approach is recommended for predictable payroll value, while keeping the architecture extensible for other approved tokens later.
@@ -98,7 +98,7 @@ The MVP focuses on the smallest product that proves the full loop for a pilot co
 ### In scope
 
 - company setup for a pilot client
-- employee onboarding
+- employee onboarding with biometric and location consent capture
 - face enrollment metadata capture
 - geofence and location setup
 - employee check-in and check-out
@@ -106,10 +106,10 @@ The MVP focuses on the smallest product that proves the full loop for a pilot co
 - manager approval flow
 - HR approval flow
 - payroll calculation from attendance and leave inputs
-- employee wallet registration and verification
+- employee wallet registration and two-party verification
 - crypto payout execution to `MetaMask` / `EVM` wallets
 - payout status tracking
-- audit log viewer
+- audit log viewer and record verification
 
 ### Recommended stack
 
@@ -138,8 +138,10 @@ The MVP can start with one pilot company, but the backend and schema should stay
 
 - attendance is accepted only when required validations pass
 - payroll cannot move to payout without manager and HR approval
-- payout goes to the employee wallet on record
+- wallet activation requires an approval flow before the wallet becomes payout-eligible
+- payout goes to the approved wallet snapshotted on the specific payroll item
 - every critical state change must create an audit log entry
+- payroll value must remain traceable from base currency to token amount
 - conversion from crypto to fiat happens outside Orgx in the MVP
 
 ## Documentation

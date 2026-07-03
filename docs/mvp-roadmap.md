@@ -4,10 +4,10 @@
 
 Deliver a pilot-ready Orgx MVP that proves:
 
-1. verified attendance works
-2. approvals block unauthorized payroll release
-3. crypto salary payout reaches employee wallets
-4. the full process is auditable
+1. verified attendance works and is written to a tamper-evident chain
+2. approvals block unauthorized payroll release and unauthorized wallet activation
+3. crypto salary payout reaches employee wallets exactly once
+4. the full process is auditable and record integrity can be verified
 
 ## Phase 0: Product Definition
 
@@ -55,20 +55,24 @@ Deliver a pilot-ready Orgx MVP that proves:
 
 - create role-aware access foundation
 - support company, employee, location, leave, and wallet setup
+- capture consent before biometric enrollment begins
+- require two-party approval before a wallet becomes payout-eligible
 
 ### Outputs
 
 - company profile setup
 - user and employee creation
+- consent capture flow for biometric and location data
 - location and geofence setup
 - face enrollment metadata flow
 - minimal leave input management
-- wallet registration and verification state
+- wallet registration with pending and verified states
 
 ### Exit Criteria
 
 - a pilot company can fully onboard users and employees
 - an employee has a valid wallet and enrollment-ready state
+- no wallet becomes payout-eligible without the required approval flow
 
 ## Phase 3: Attendance Flow
 
@@ -77,6 +81,7 @@ Deliver a pilot-ready Orgx MVP that proves:
 - implement the core employee experience
 - validate face and geofence checks
 - record accepted and rejected attempts
+- make accepted records verifiable against the audit chain
 
 ### Outputs
 
@@ -84,12 +89,14 @@ Deliver a pilot-ready Orgx MVP that proves:
 - attendance validation service
 - attendance review screens
 - audit logging for attendance events
+- on-demand verification for individual attendance records
 
 ### Exit Criteria
 
 - an employee can successfully check in and check out
 - failed validation returns a visible reason
 - attendance history and audit entries are visible to authorized roles
+- an accepted attendance record can be recomputed and verified on demand
 
 ## Phase 4: Payroll And Approval Flow
 
@@ -97,6 +104,7 @@ Deliver a pilot-ready Orgx MVP that proves:
 
 - convert attendance data into payroll runs
 - enforce manager and HR approval gates
+- preserve salary value in a base currency while tracking the conversion used for token payout
 
 ### Outputs
 
@@ -104,12 +112,14 @@ Deliver a pilot-ready Orgx MVP that proves:
 - payroll calculation engine using attendance and leave inputs
 - manager approval flow
 - HR approval flow
+- conversion-rate capture with rate, source, and capture timestamp on payroll items
 - audit logging for payroll and approvals
 
 ### Exit Criteria
 
 - a payroll run can be generated from approved inputs
 - payout cannot start before both approvals exist
+- each payout-ready payroll item shows both its base-currency value and token conversion details
 
 ## Phase 5: Crypto Payout
 
@@ -117,18 +127,21 @@ Deliver a pilot-ready Orgx MVP that proves:
 
 - execute approved payout instructions to employee wallets
 - track on-chain transaction state
+- guarantee that duplicate submission or retry cannot double-pay a payroll item
 
 ### Outputs
 
-- payout instruction creation
+- payout instruction creation from payout-ready payroll items with immutable settlement snapshots
 - `EVM` transaction submission
 - transaction status tracking
+- explicit, attributable retry flow with lineage to the original instruction
 - employee payout visibility
 
 ### Exit Criteria
 
-- an approved payroll item can be paid to a registered employee wallet
+- an approved payroll item can be paid to its verified snapshotted wallet
 - transaction hash and status are stored and visible
+- a duplicate submission or retry cannot result in a second payment for the same payroll item
 
 ## Phase 6: Hardening And Verification
 
@@ -139,17 +152,23 @@ Deliver a pilot-ready Orgx MVP that proves:
 
 ### Outputs
 
-- permission checks
+- permission checks, including wallet verification controls
 - idempotency protection for payout
 - seed data or demo tenant
 - key automated tests for high-risk paths
-- audit hash verification utility
+- audit hash verification utility usable by employees for their own records and by HR or auditors more broadly
 
 ### Exit Criteria
 
 - core end-to-end demo works on seeded data
 - duplicate payout risk is controlled
 - audit chain verifies without mismatch
+
+### Named High-Risk Tests
+
+1. payout cannot fire without both manager and HR approval present
+2. a given approved payroll item cannot be paid twice under retry or duplicate-submission conditions
+3. a tampered attendance or payroll record is detected by audit verification
 
 ## Suggested Milestone Sequence
 
@@ -163,19 +182,19 @@ Apps scaffolded and database connected.
 
 ### Milestone C
 
-Employee onboarding and attendance flow working end to end.
+Employee onboarding, consent capture, and attendance flow working end to end.
 
 ### Milestone D
 
-Payroll and approvals working end to end.
+Payroll, approvals, and conversion-rate tracking working end to end.
 
 ### Milestone E
 
-Crypto payout working on the first supported chain.
+Crypto payout working on the first supported chain with idempotency proven under retry.
 
 ### Milestone F
 
-Pilot readiness with tests, seed data, and audit verification.
+Pilot readiness with named tests, seed data, and audit verification.
 
 ## Recommended Verification Approach
 
@@ -183,8 +202,8 @@ Before expanding features, verify:
 
 - employee mobile web usability
 - face-match reliability in real usage
-- wallet registration and payout usability
-- payout tracking accuracy
+- wallet registration, approval, and payout usability
+- payout tracking accuracy and idempotency under real network conditions
 - audit log integrity after realistic workflows
 
 ## After MVP

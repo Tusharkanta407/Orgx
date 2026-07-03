@@ -37,7 +37,7 @@ Responsible for setting up the company, configuring locations, assigning reporti
 
 ### Employee
 
-Uses the mobile-first web app to enroll required identity data, register a wallet, check in, check out, review personal attendance, and view payout status.
+Uses the mobile-first web app to record consent for biometric and location data, enroll required identity data, register a wallet, check in, check out, review personal attendance, and view payout status.
 
 ### Manager
 
@@ -65,12 +65,14 @@ Reviews traceable records and verifies who performed important actions and when.
 - prevent payroll release without required approvals
 - send salary to employee `EVM` wallets
 - preserve an auditable trail of all critical actions
+- let authorized users verify record integrity for attendance and payroll data
 
 ### Technical Goals
 
 - keep the backend tenant-ready even for a single pilot company
 - separate operational data from integration and chain-tracking concerns
 - make payment execution pluggable enough to support more tokens or chains later
+- make payroll value explainable in both its base-currency form and its final token payout amount
 
 ## 6. Non-Goals For MVP
 
@@ -89,6 +91,7 @@ Reviews traceable records and verifies who performed important actions and when.
 - fiat conversion happens outside Orgx
 - attendance validation requires face match and geofence by default
 - a supported token allowlist will be used in MVP, with stablecoin-first policy recommended for predictable salary value
+- salary is defined in a fixed base currency, while token payout amount is derived from a captured conversion rate
 
 ## 8. Core User Journeys
 
@@ -97,15 +100,17 @@ Reviews traceable records and verifies who performed important actions and when.
 1. company admin creates or is provisioned into the company workspace
 2. company admin configures locations and geofences
 3. company admin adds managers, HR users, and employees
-4. company admin defines payroll settings and approved payout token policy
+4. company admin defines payroll settings, base currency, and approved payout token policy
 
 ### Journey B: Employee Onboarding
 
 1. employee receives access
 2. employee completes profile
-3. employee enrolls face reference data
-4. employee registers payout wallet address
-5. system stores onboarding status and readiness for attendance and payroll
+3. employee reviews and records consent for biometric and location data collection
+4. employee enrolls face reference data
+5. employee registers payout wallet address
+6. wallet enters a pending state and requires a two-party verification step before it becomes payout-eligible
+7. system stores onboarding status and readiness for attendance and payroll
 
 ### Journey C: Attendance Capture
 
@@ -126,11 +131,20 @@ Reviews traceable records and verifies who performed important actions and when.
 
 ### Journey E: Crypto Payout
 
-1. Orgx creates a payout instruction for an approved payroll item
-2. Orgx submits an on-chain transfer to the employee wallet
-3. transaction hash and final status are tracked
-4. employee sees payout state in the product
-5. audit records capture initiation, success, failure, or retry
+1. Orgx marks an approved payroll item as payout-ready by snapshotting the wallet, conversion rate, and token amount used for settlement
+2. Orgx creates a payout instruction from that snapshotted payroll item
+3. Orgx submits an on-chain transfer to the employee wallet
+4. transaction hash and final status are tracked
+5. employee sees payout state in the product
+6. audit records capture initiation, success, failure, or retry
+
+### Journey F: Record Verification
+
+1. employee, HR, or an auditor selects an attendance or payroll record
+2. system recomputes the linked audit-record hash inputs for that record
+3. system compares the recomputed values with the stored hash-chain data
+4. a match confirms the record history has not been altered since it was written
+5. a mismatch is surfaced as an integrity failure for investigation
 
 ## 9. Functional Requirements
 
@@ -146,9 +160,10 @@ Reviews traceable records and verifies who performed important actions and when.
 - each location must support geofence metadata
 - employees must be associated with a company and, where relevant, a location
 
-### FR-3: Employee Onboarding
+### FR-3: Employee Onboarding And Consent
 
 - the system must store employee identity and employment metadata
+- the system must record explicit employee consent for biometric and location data collection, with a timestamp and consent-policy version, before face enrollment or attendance capture proceeds
 - the system must track whether face enrollment is complete
 - the system must store employee payout wallet address and wallet verification status
 
@@ -156,6 +171,7 @@ Reviews traceable records and verifies who performed important actions and when.
 
 - employees must be able to submit check-in and check-out attempts
 - each attempt must include required verification inputs
+- attendance capture must require the relevant consent already on record
 - the backend must evaluate face-match and geofence results
 - rejected attempts must return a reason code and user-facing message
 
@@ -164,6 +180,7 @@ Reviews traceable records and verifies who performed important actions and when.
 - accepted attendance attempts must become canonical attendance events
 - the system must preserve rejected attempts for traceability
 - managers and HR must be able to review attendance data for their scope
+- authorized users must be able to verify the integrity of a specific attendance record
 
 ### FR-6: Leave Inputs
 
@@ -175,25 +192,30 @@ Reviews traceable records and verifies who performed important actions and when.
 
 - the system must create payroll periods
 - payroll computation must use approved attendance, leave inputs, and payroll settings
-- the system must produce payout-ready records with status tracking
+- the system must record salary in a fixed base currency and produce payout-ready records with status tracking
+- when a payroll item becomes payout-ready, the system must record the approved wallet reference, the conversion rate, the rate source, the capture timestamp, and the resulting token amount
 
 ### FR-8: Approvals
 
 - manager approval must be required before HR approval
 - HR approval must be required before payout execution
+- wallet activation must require an equivalent two-party approval before a wallet becomes payout-eligible
 - all approval decisions must be attributable to a specific user and timestamp
 
 ### FR-9: Crypto Payout
 
 - the system must support payout to an employee `EVM` wallet
-- the system must record token, chain, wallet address, amount, and transaction reference
-- the system must track pending, confirmed, failed, and retried payout states
+- the system must record token, chain, wallet address snapshot, amount, conversion rate, and transaction reference
+- the system must track pending, confirmed, failed, and cancelled payout states, with retries represented as linked payout instructions
+- the system must guarantee that a given approved payroll item can never be paid more than once
+- retry of a failed payout must be an explicit, attributable action that creates its own audit record
 
-### FR-10: Audit Logging
+### FR-10: Audit Logging And Verification
 
 - every critical action must write an immutable audit record
 - audit records must be hash-chained
 - the system must expose audit history to authorized reviewers
+- the system must provide a verification function that recomputes and compares hashes to detect tampering for attendance and payroll records
 
 ## 10. Business Rules
 
@@ -201,9 +223,11 @@ Reviews traceable records and verifies who performed important actions and when.
 - employees can retry rejected attendance submissions
 - attendance and approval data must remain traceable after updates
 - payroll cannot move to payout without manager and HR approval
-- payout goes only to the wallet currently approved for the employee
+- payout goes only to the approved wallet snapshotted for that specific payroll item
+- wallet changes require the same approval model before a new wallet can become payout-eligible
 - fiat conversion is outside the Orgx MVP scope
 - supported payout assets come from an approved token allowlist
+- salary value must be traceable from approved base-currency amount to final token payout amount
 
 ## 11. Acceptance Criteria
 
@@ -213,12 +237,15 @@ Reviews traceable records and verifies who performed important actions and when.
 - an employee checking in outside the geofence receives a rejected result with a visible reason
 - an employee failing face verification receives a rejected result with a visible reason
 - every attendance attempt produces an audit event
+- an accepted attendance record can be re-verified against its hash-chain data
 
 ### Onboarding
 
 - a company admin can create employees and assign reporting hierarchy
+- an employee cannot proceed to face enrollment without a recorded consent event
 - an employee can register a wallet address
-- a wallet cannot be used for payout until it is marked valid in the system
+- a wallet cannot be used for payout until it passes the two-party wallet approval flow
+- an employee cannot submit attendance capture without the required consent on record
 
 ### Approvals
 
@@ -231,6 +258,7 @@ Reviews traceable records and verifies who performed important actions and when.
 - the system can create a payroll period and generate payout items from approved inputs
 - a payroll item cannot be paid twice
 - payout status is visible to HR and the employee
+- each payroll item preserves both the base-currency amount and the conversion details used to determine token payout
 
 ### Leave Inputs
 
@@ -242,6 +270,7 @@ Reviews traceable records and verifies who performed important actions and when.
 
 - audit records include actor, action type, target entity, timestamp, payload summary, `prev_hash`, and `record_hash`
 - changes to historical audit data would be detectable through hash verification
+- authorized users can trigger verification for the audit-record history of specific attendance or payroll records
 
 ## 12. Success Metrics
 
@@ -257,6 +286,7 @@ Reviews traceable records and verifies who performed important actions and when.
 - face verification provider data handling must be explicitly documented before rollout
 - wallet payout, token policy, and payroll operations must be reviewed against the target operating region's compliance requirements
 - Orgx should avoid acting as an exchange in the MVP; fiat conversion remains outside the product
+- biometric consent history and retention behavior should be explicitly defined for offboarded employees
 
 ## 14. Risks And Verification Items
 
@@ -274,7 +304,7 @@ To keep the build focused, the first implementation should assume:
 - one `EVM` chain for payout
 - one or a small approved set of payout tokens
 - mobile-first web rather than native mobile
-- manual or admin-assisted wallet verification in early rollout
+- manual or admin-assisted two-party wallet verification in early rollout
 
 ## 16. Exit Criteria For MVP
 

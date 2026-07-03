@@ -31,7 +31,7 @@
 - create and manage company profile
 - create locations and geofence definitions
 - define reporting hierarchy
-- configure approved payout token policy
+- configure approved payout token policy and base currency
 
 ### P1
 
@@ -47,14 +47,15 @@
 ### P0
 
 - employee profile creation
+- recorded, timestamped consent for biometric and location data collection before enrollment
 - face enrollment status tracking
 - wallet address registration
-- wallet verification status
+- two-party wallet verification before a wallet becomes payout-eligible
 
 ### P1
 
 - employee self-service profile updates
-- wallet change request workflow
+- wallet change request workflow gated through the same approval model as initial wallet verification
 
 ### P2
 
@@ -66,10 +67,12 @@
 
 - mobile-first check-in
 - mobile-first check-out
+- attendance capture gated by recorded biometric and location consent
 - face-match validation
 - GPS/geofence validation
 - accepted or rejected result states
 - visible retry reason on failure
+- accepted attempts written into the hash-chained audit trail as canonical events
 
 ### P1
 
@@ -105,8 +108,8 @@
 
 - payroll period creation
 - compile attendance and leave inputs into payroll inputs
-- minimal payroll calculation engine
-- payroll item generation
+- minimal payroll calculation engine in a fixed base currency
+- payout-ready payroll item generation with conversion rate, rate source, rate timestamp, and token amount
 
 ### P1
 
@@ -142,6 +145,7 @@
 - HR approval
 - approval status timeline
 - block payout until required approvals exist
+- wallet-verification approval modeled through the same approval mechanism
 
 ### P1
 
@@ -156,10 +160,12 @@
 
 ### P0
 
-- create payout instruction from approved payroll item
+- create payout instruction from a payout-ready payroll item that has already snapshotted the payout wallet and conversion details
 - support payout to employee `MetaMask` or compatible `EVM` wallet
-- record token, chain, wallet address, amount, and transaction hash
-- track payout states: pending, confirmed, failed, retried
+- record token, chain, wallet address, amount, conversion rate, and transaction hash
+- track payout states: pending, confirmed, failed, and cancelled
+- idempotent submission so a payroll item cannot be paid twice
+- explicit, attributed retry action with lineage back to the original payout instruction
 
 ### P1
 
@@ -177,9 +183,10 @@
 
 ### P0
 
-- immutable audit event creation for every critical action
+- immutable audit event creation for every critical action, including consent, wallet verification, and payout retry
 - hash chain using `prev_hash` and `record_hash`
 - audit viewer for authorized roles
+- self-service verification so authorized users can verify specific attendance or payroll records
 
 ### P1
 
@@ -212,14 +219,14 @@
 The smallest useful release should include:
 
 1. company setup
-2. employee onboarding
-3. wallet registration
+2. employee onboarding with recorded consent
+3. wallet registration and two-party verification
 4. verified attendance check-in and check-out
 5. minimal leave input handling
 6. manager and HR approvals
-7. payroll calculation
-8. crypto payout execution
-9. audit trail visibility
+7. payroll calculation with conversion-rate tracking
+8. crypto payout execution with idempotent submission and attributed retry
+9. audit trail visibility and record verification
 
 ## 13. Deferred Until After First Verification
 

@@ -36,7 +36,7 @@ Return current company profile and configuration summary.
 
 ### `PATCH /api/v1/company`
 
-Update company-level settings such as approved payout token policy.
+Update company-level settings such as approved payout token policy and base currency.
 
 ### `GET /api/v1/users`
 
@@ -65,23 +65,41 @@ Request body should support:
 
 ### `GET /api/v1/employees/{employeeId}`
 
-Return employee details, onboarding state, wallet state, and attendance summary.
+Return employee details, onboarding state, consent state, wallet state, and attendance summary.
 
 ### `PATCH /api/v1/employees/{employeeId}`
 
 Update employee metadata.
 
-## 5. Face Enrollment
+## 5. Consent Management
+
+### `GET /api/v1/employees/{employeeId}/consents`
+
+List recorded consent events for the employee.
+
+### `POST /api/v1/employees/{employeeId}/consents`
+
+Record biometric or location consent for the employee.
+
+Request body should support:
+
+- `consent_type`
+- `consent_version`
+- `given_at`
+
+## 6. Face Enrollment
 
 ### `POST /api/v1/employees/{employeeId}/face-enrollment`
 
 Create or register face enrollment reference metadata.
 
+This endpoint should reject the request unless required consent has already been recorded.
+
 ### `GET /api/v1/employees/{employeeId}/face-enrollment`
 
 Return enrollment status and provider reference summary.
 
-## 6. Wallet Management
+## 7. Wallet Management
 
 ### `POST /api/v1/employees/{employeeId}/wallets`
 
@@ -99,13 +117,13 @@ List wallet records for an employee.
 
 ### `PATCH /api/v1/employees/{employeeId}/wallets/{walletId}`
 
-Update wallet state such as verification or activation status.
+Update wallet metadata that does not bypass the approval flow.
 
-### `POST /api/v1/employees/{employeeId}/wallets/{walletId}/verify`
+### `POST /api/v1/employees/{employeeId}/wallets/{walletId}/request-verification`
 
-Mark or validate wallet verification through the chosen verification process.
+Request wallet verification through the defined two-party approval process.
 
-## 7. Locations And Geofences
+## 8. Locations And Geofences
 
 ### `GET /api/v1/locations`
 
@@ -126,11 +144,13 @@ Request body should support:
 
 Update location or geofence settings.
 
-## 8. Attendance
+## 9. Attendance
 
 ### `POST /api/v1/attendance/check-in`
 
 Submit a check-in attempt.
+
+This endpoint should reject the request unless the required biometric and location consent is already recorded.
 
 Request body should support:
 
@@ -151,6 +171,8 @@ Response should return:
 
 Submit a check-out attempt.
 
+This endpoint should reject the request unless the required biometric and location consent is already recorded.
+
 ### `GET /api/v1/attendance/attempts`
 
 List attendance attempts with filters for employee, date, and status.
@@ -163,7 +185,11 @@ List accepted attendance events.
 
 Return a single attendance event with validation summary.
 
-## 9. Payroll
+### `POST /api/v1/attendance/events/{eventId}/verify`
+
+Recompute and verify the linked audit-record hash chain for one attendance event.
+
+## 10. Payroll
 
 ### `GET /api/v1/payroll/periods`
 
@@ -189,7 +215,11 @@ Return payroll run summary and employee payout items.
 
 List payroll items for the run.
 
-## 10. Leave Inputs
+### `POST /api/v1/payroll/items/{itemId}/verify`
+
+Recompute and verify the linked audit-record hash chain for one payroll item.
+
+## 11. Leave Inputs
 
 ### `GET /api/v1/leave-records`
 
@@ -203,7 +233,7 @@ Create a leave record used as payroll input.
 
 Update a leave record before payroll finalization.
 
-## 11. Approvals
+## 12. Approvals
 
 ### `POST /api/v1/payroll/runs/{runId}/approve/manager`
 
@@ -217,7 +247,19 @@ Submit final HR approval.
 
 Return approval timeline and actors.
 
-## 12. Payouts
+### `POST /api/v1/wallets/{walletId}/approve`
+
+Approve a pending wallet so it can become payout-eligible.
+
+### `POST /api/v1/wallets/{walletId}/reject`
+
+Reject a pending wallet verification request.
+
+### `GET /api/v1/wallets/{walletId}/approvals`
+
+Return the wallet approval history.
+
+## 13. Payouts
 
 ### `POST /api/v1/payouts`
 
@@ -226,8 +268,8 @@ Create payout instructions for approved payroll items.
 Request body should support:
 
 - `payroll_run_id` or explicit payroll item ids
-- payout token
-- chain id
+
+The service should create payout instructions only from payroll items that already store the approved wallet snapshot, payout token, chain, conversion rate, and token amount.
 
 ### `GET /api/v1/payouts`
 
@@ -235,7 +277,7 @@ List payout instructions and statuses.
 
 ### `GET /api/v1/payouts/{payoutId}`
 
-Return payout instruction, wallet, token, and transaction status details.
+Return payout instruction, immutable wallet snapshot, token, conversion details, retry lineage, and transaction status details.
 
 ### `POST /api/v1/payouts/{payoutId}/submit`
 
@@ -247,11 +289,13 @@ This endpoint must be idempotent.
 
 Retry a failed payout when allowed.
 
+This endpoint should require explicit authorization and create an attributable retry record.
+
 ### `GET /api/v1/payouts/{payoutId}/transactions`
 
 Return blockchain transaction history for the payout.
 
-## 13. Audit
+## 14. Audit
 
 ### `GET /api/v1/audit/events`
 
@@ -263,15 +307,15 @@ Return one audit event with hash-chain metadata.
 
 ### `POST /api/v1/audit/verify`
 
-Run or trigger audit chain integrity verification for a selected range.
+Run or trigger audit chain integrity verification for a selected record or range.
 
-## 14. Dashboard Views
+## 15. Dashboard Views
 
 These may be composed in the frontend from multiple endpoints or served through dedicated summary APIs.
 
 ### `GET /api/v1/dashboard/employee`
 
-Return employee summary including attendance history and payout status.
+Return employee summary including attendance history, payout status, and access to self-service record verification.
 
 ### `GET /api/v1/dashboard/manager`
 
@@ -281,7 +325,7 @@ Return manager summary including team attendance and approval tasks.
 
 Return HR summary including payroll, payout exceptions, and audit highlights.
 
-## 15. Core Response Shapes
+## 16. Core Response Shapes
 
 Recommended response conventions:
 
@@ -291,7 +335,7 @@ Recommended response conventions:
 - `data`: canonical payload
 - `meta`: pagination or processing metadata
 
-## 16. Idempotency Requirements
+## 17. Idempotency Requirements
 
 These operations should require idempotency protection:
 
@@ -304,7 +348,7 @@ Suggested mechanism:
 
 - client-supplied or server-issued idempotency keys stored with request result
 
-## 17. Webhook And Background Needs
+## 18. Webhook And Background Needs
 
 The MVP should plan for:
 

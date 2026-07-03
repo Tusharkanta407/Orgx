@@ -9,6 +9,7 @@ The Orgx MVP architecture should:
 - keep attendance, payroll, payout, and audit logic in a central backend
 - support wallet-based crypto disbursement on `EVM`
 - preserve a tamper-evident audit trail for critical events
+- let authorized users verify attendance and payroll record integrity
 
 ## 2. High-Level System
 
@@ -64,6 +65,7 @@ Recommended modules:
 - `companies`
 - `users`
 - `employees`
+- `consent`
 - `locations`
 - `attendance`
 - `approvals`
@@ -77,6 +79,7 @@ Recommended modules:
 
 - tenants and users
 - employee and location metadata
+- employee consent records
 - attendance attempts and accepted events
 - payroll periods, runs, and line items
 - approval actions
@@ -85,7 +88,7 @@ Recommended modules:
 
 ### Face Match Provider
 
-An external biometric service should compare live capture input to the employee's enrolled reference. The backend should treat this as an integration behind a provider interface, not as core logic mixed into controllers.
+An external biometric service should compare live capture input to the employee's enrolled reference. The backend should treat this as an integration behind a provider interface, not as core logic mixed into controllers. Face enrollment should not proceed unless a recorded consent event already exists for the employee.
 
 ### Blockchain Payout Service
 
@@ -129,6 +132,28 @@ flowchart TD
   payout --> audit[AuditLog]
 ```
 
+### Wallet Verification Flow
+
+```mermaid
+flowchart TD
+  employee[Employee] -->|"registerWallet"| walletApi[WalletApi]
+  walletApi --> pending[WalletPendingState]
+  pending --> approval[SecondPartyApproval]
+  approval --> verified[WalletVerified]
+  verified --> audit[AuditLog]
+```
+
+### Record Verification Flow
+
+```mermaid
+flowchart TD
+  requester[EmployeeHrOrAuditor] -->|"verifyRecord"| auditApi[AuditApi]
+  auditApi --> recompute[RecomputeLinkedAuditHashes]
+  recompute --> compare[CompareAgainstRecordHash]
+  compare --> result[MatchOrMismatch]
+  result --> requester
+```
+
 ## 5. Trust Boundaries
 
 ### Trusted Core
@@ -139,6 +164,7 @@ The trusted core is the Orgx backend plus the database. These components decide:
 - whether attendance is accepted or rejected
 - whether approvals are sufficient
 - whether payout execution can start
+- whether wallet verification is sufficient for payout eligibility
 
 ### Semi-Trusted Integrations
 
@@ -164,16 +190,19 @@ Orgx should not assume the device or wallet environment is fully trusted, so wal
 - all backend endpoints require authenticated access unless explicitly public
 - every business record includes `company_id`
 - every privileged action must be permission-checked server side
-- payout execution must be idempotent
+- payout execution must be idempotent at the payroll-item boundary so one payroll item cannot be paid more than once
+- wallet verification requires a two-party approval flow
 - on-chain transaction submission must be traceable with internal request identifiers
-- employee wallet changes should be guarded and auditable
+- employee wallet changes should be guarded, auditable, and unable to retroactively repoint an already-generated payroll item
 
 ## 7. Privacy And Compliance Considerations
 
 - face and GPS data should follow a defined retention policy and only keep what is required for verification and audit
+- consent for biometric and location collection should be recorded before enrollment or capture flows depend on it
 - biometric processing through an external provider must be contractually and technically reviewed before rollout
 - wallet payout policy and supported tokens must be reviewed against the operating region's payroll and crypto rules
 - Orgx should not perform fiat conversion inside the MVP; employees convert externally after receipt
+- offboarding should include a defined retention or deletion path for biometric reference and consent records
 
 ## 8. Deployment Assumptions
 
@@ -197,9 +226,10 @@ The MVP should integrate with one face-match provider. Orgx stores enrollment st
 The MVP should support:
 
 - employee registration of an `EVM` wallet address
+- wallet verification through a two-party approval flow
 - one payout chain
 - a short approved token allowlist
-- transaction status tracking
+- transaction status tracking with retry lineage back to the original instruction
 
 The employee uses their own wallet and later converts crypto externally. Orgx does not act as an exchange in the MVP.
 
@@ -208,14 +238,15 @@ The employee uses their own wallet and later converts crypto externally. Orgx do
 Keep the following boundaries explicit in code and docs:
 
 - UI does not contain payroll decision logic
-- payout submission does not bypass approval checks
+- payout submission does not bypass approval checks, including wallet verification
 - audit creation is part of service-layer operations, not optional UI behavior
 - blockchain integration is a provider/service concern, not spread across business modules
+- retry of a failed payout is an explicit, attributed action rather than an automatic silent resubmission
 
 ## 11. Open Architecture Decisions To Verify Later
 
 - which `EVM` chain is the official first chain
 - which payout token or token set is supported initially
 - whether payout signing uses a direct treasury wallet, relay service, or contract-based distributor
-- how wallet verification is performed in the first rollout
+- who the designated second approver is for wallet verification in the first rollout
 - whether optional public-chain audit anchoring stays separate from payout-chain activity

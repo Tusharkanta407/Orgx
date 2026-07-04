@@ -16,9 +16,9 @@ Base path suggestion:
 
 ## 2. Authentication
 
-### `POST /api/v1/auth/login`
+### `POST /api/v1/auth/firebase`
 
-Authenticate a user and return a session or token.
+Exchange a `Firebase Auth` identity token for an Orgx tenant-scoped session or token.
 
 ### `POST /api/v1/auth/logout`
 
@@ -28,7 +28,25 @@ Terminate the current session.
 
 Return the current user, role, and company context.
 
-## 3. Company And User Setup
+## 3. Public SaaS And Tenant Provisioning
+
+### `GET /api/v1/public/plans`
+
+List publicly available Orgx plans for `orgx.com`.
+
+### `POST /api/v1/public/customers`
+
+Create a customer onboarding request from the public website.
+
+### `POST /api/v1/public/tenants`
+
+Provision a tenant workspace and return the subdomain context.
+
+### `GET /api/v1/public/tenants/resolve`
+
+Resolve a tenant from a host or subdomain value.
+
+## 4. Company And User Setup
 
 ### `GET /api/v1/company`
 
@@ -46,7 +64,7 @@ List users for the current company.
 
 Create a manager, HR user, or admin user.
 
-## 4. Employees
+## 5. Employees
 
 ### `GET /api/v1/employees`
 
@@ -71,7 +89,7 @@ Return employee details, onboarding state, consent state, wallet state, and atte
 
 Update employee metadata.
 
-## 5. Consent Management
+## 6. Consent Management
 
 ### `GET /api/v1/employees/{employeeId}/consents`
 
@@ -87,7 +105,7 @@ Request body should support:
 - `consent_version`
 - `given_at`
 
-## 6. Face Enrollment
+## 7. Face Enrollment
 
 ### `POST /api/v1/employees/{employeeId}/face-enrollment`
 
@@ -99,7 +117,7 @@ This endpoint should reject the request unless required consent has already been
 
 Return enrollment status and provider reference summary.
 
-## 7. Wallet Management
+## 8. Wallet Management
 
 ### `POST /api/v1/employees/{employeeId}/wallets`
 
@@ -123,7 +141,7 @@ Update wallet metadata that does not bypass the approval flow.
 
 Request wallet verification through the defined two-party approval process.
 
-## 8. Locations And Geofences
+## 9. Locations And Geofences
 
 ### `GET /api/v1/locations`
 
@@ -144,21 +162,34 @@ Request body should support:
 
 Update location or geofence settings.
 
-## 9. Attendance
+## 10. Storage And Proof Media
+
+### `POST /api/v1/storage/upload-url`
+
+Create a signed upload target for face-enrollment media or remote work-proof media.
+
+### `POST /api/v1/storage/assets`
+
+Register uploaded storage metadata with the backend.
+
+## 11. Attendance
 
 ### `POST /api/v1/attendance/check-in`
 
 Submit a check-in attempt.
 
-This endpoint should reject the request unless the required biometric and location consent is already recorded.
+This endpoint should reject the request unless the consent required by the tenant attendance policy is already recorded.
 
 Request body should support:
 
 - `employee_id`
 - `captured_at`
-- `latitude`
-- `longitude`
+- `latitude` when the tenant attendance policy requires it
+- `longitude` when the tenant attendance policy requires it
 - face-match payload or provider reference
+- `attendance_mode`
+- `task_summary`
+- proof asset references when remote-work mode requires them
 
 Response should return:
 
@@ -171,7 +202,7 @@ Response should return:
 
 Submit a check-out attempt.
 
-This endpoint should reject the request unless the required biometric and location consent is already recorded.
+This endpoint should reject the request unless the consent required by the tenant attendance policy is already recorded.
 
 ### `GET /api/v1/attendance/attempts`
 
@@ -189,7 +220,7 @@ Return a single attendance event with validation summary.
 
 Recompute and verify the linked audit-record hash chain for one attendance event.
 
-## 10. Payroll
+## 12. Payroll
 
 ### `GET /api/v1/payroll/periods`
 
@@ -219,7 +250,7 @@ List payroll items for the run.
 
 Recompute and verify the linked audit-record hash chain for one payroll item.
 
-## 11. Leave Inputs
+## 13. Leave Inputs
 
 ### `GET /api/v1/leave-records`
 
@@ -233,7 +264,7 @@ Create a leave record used as payroll input.
 
 Update a leave record before payroll finalization.
 
-## 12. Approvals
+## 14. Approvals
 
 ### `POST /api/v1/payroll/runs/{runId}/approve/manager`
 
@@ -259,7 +290,7 @@ Reject a pending wallet verification request.
 
 Return the wallet approval history.
 
-## 13. Payouts
+## 15. Payouts
 
 ### `POST /api/v1/payouts`
 
@@ -295,7 +326,7 @@ This endpoint should require explicit authorization and create an attributable r
 
 Return blockchain transaction history for the payout.
 
-## 14. Audit
+## 16. Audit
 
 ### `GET /api/v1/audit/events`
 
@@ -309,13 +340,17 @@ Return one audit event with hash-chain metadata.
 
 Run or trigger audit chain integrity verification for a selected record or range.
 
-## 15. Dashboard Views
+## 17. Dashboard Views
 
 These may be composed in the frontend from multiple endpoints or served through dedicated summary APIs.
 
 ### `GET /api/v1/dashboard/employee`
 
 Return employee summary including attendance history, payout status, and access to self-service record verification.
+
+### `GET /api/v1/dashboard/public`
+
+Return public-site onboarding and plan metadata for `orgx.com`.
 
 ### `GET /api/v1/dashboard/manager`
 
@@ -325,7 +360,11 @@ Return manager summary including team attendance and approval tasks.
 
 Return HR summary including payroll, payout exceptions, and audit highlights.
 
-## 16. Core Response Shapes
+### `GET /api/v1/dashboard/admin`
+
+Return tenant admin summary including employee setup, attendance policy, storage usage, and plan state.
+
+## 18. Core Response Shapes
 
 Recommended response conventions:
 
@@ -335,7 +374,7 @@ Recommended response conventions:
 - `data`: canonical payload
 - `meta`: pagination or processing metadata
 
-## 17. Idempotency Requirements
+## 19. Idempotency Requirements
 
 These operations should require idempotency protection:
 
@@ -348,12 +387,13 @@ Suggested mechanism:
 
 - client-supplied or server-issued idempotency keys stored with request result
 
-## 18. Webhook And Background Needs
+## 20. Webhook And Background Needs
 
 The MVP should plan for:
 
 - blockchain confirmation polling or webhook-style event ingestion
 - payout status reconciliation job
 - audit verification job
+- storage cleanup and retention job
 
 These do not need public API endpoints at first, but the system design should reserve space for them.

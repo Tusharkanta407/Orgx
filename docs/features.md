@@ -10,6 +10,9 @@
 
 ### P0
 
+- public `orgx.com` onboarding
+- tenant subdomain routing
+- `Firebase Auth` sign-in
 - company-scoped authentication
 - role-based access for company admin, HR, manager, and employee
 - company-aware data filtering using `company_id`
@@ -21,10 +24,27 @@
 
 ### P2
 
-- self-serve company signup
 - advanced permission templates
 
-## 2. Company Setup
+## 2. SaaS Acquisition And Provisioning
+
+### P0
+
+- package and plan display on `orgx.com`
+- customer detail capture
+- tenant provisioning for `{tenant}.orgx.com`
+- customer admin creation
+
+### P1
+
+- billing status visibility
+- self-serve plan changes
+
+### P2
+
+- full subscription lifecycle automation
+
+## 3. Company Setup
 
 ### P0
 
@@ -42,7 +62,7 @@
 
 - templated onboarding for multiple companies
 
-## 3. Employee Onboarding
+## 4. Employee Onboarding
 
 ### P0
 
@@ -51,6 +71,7 @@
 - face enrollment status tracking
 - wallet address registration
 - two-party wallet verification before a wallet becomes payout-eligible
+- company-email-based login under the tenant workspace
 
 ### P1
 
@@ -61,15 +82,16 @@
 
 - support for multiple wallets per employee
 
-## 4. Attendance Verification
+## 5. Attendance Verification
 
 ### P0
 
 - mobile-first check-in
 - mobile-first check-out
-- attendance capture gated by recorded biometric and location consent
+- attendance capture gated by the recorded consent required by the tenant policy
 - face-match validation
-- GPS/geofence validation
+- remote-work proof validation
+- daily task or work-plan capture
 - accepted or rejected result states
 - visible retry reason on failure
 - accepted attempts written into the hash-chained audit trail as canonical events
@@ -79,12 +101,13 @@
 - device integrity signals
 - offline submission handling
 - attendance anomaly flags
+- optional on-site policy controls such as location checks
 
 ### P2
 
 - advanced anti-spoofing and fraud scoring
 
-## 5. Attendance Operations
+## 6. Attendance Operations
 
 ### P0
 
@@ -92,6 +115,7 @@
 - manager attendance review
 - HR attendance review
 - attendance status filtering
+- tenant-specific attendance policy selection
 
 ### P1
 
@@ -102,7 +126,7 @@
 
 - shift scheduling and roster-based attendance rules
 
-## 6. Payroll
+## 7. Payroll
 
 ### P0
 
@@ -120,7 +144,7 @@
 
 - advanced payroll rules by employee class, site, or region
 
-## 7. Leave Inputs
+## 8. Leave Inputs
 
 ### P0
 
@@ -137,7 +161,7 @@
 
 - full employee leave request and approval workflow
 
-## 8. Approval Workflow
+## 9. Approval Workflow
 
 ### P0
 
@@ -156,7 +180,7 @@
 
 - multi-level custom approval chains
 
-## 9. Crypto Payout
+## 10. Crypto Payout
 
 ### P0
 
@@ -166,6 +190,7 @@
 - track payout states: pending, confirmed, failed, and cancelled
 - idempotent submission so a payroll item cannot be paid twice
 - explicit, attributed retry action with lineage back to the original payout instruction
+- store only value events and proof references on chain, not raw media
 
 ### P1
 
@@ -179,7 +204,24 @@
 - multiple token options per company
 - payout batching optimizations
 
-## 10. Audit And Traceability
+## 11. Storage And Media
+
+### P0
+
+- managed storage for employee face-enrollment media
+- managed storage for remote work-environment proof photos
+- media metadata tied to attendance and employee records
+
+### P1
+
+- secure media retention controls
+- proof attachment review tooling
+
+### P2
+
+- advanced storage lifecycle automation
+
+## 12. Audit And Traceability
 
 ### P0
 
@@ -187,6 +229,7 @@
 - hash chain using `prev_hash` and `record_hash`
 - audit viewer for authorized roles
 - self-service verification so authorized users can verify specific attendance or payroll records
+- media references included in auditable attendance events without placing files on chain
 
 ### P1
 
@@ -197,7 +240,7 @@
 
 - daily root hash anchoring to a public chain
 
-## 11. Reporting And Visibility
+## 13. Reporting And Visibility
 
 ### P0
 
@@ -214,21 +257,23 @@
 
 - compliance and auditor dashboards
 
-## 12. Recommended First Release Slice
+## 14. Recommended First Release Slice
 
 The smallest useful release should include:
 
-1. company setup
-2. employee onboarding with recorded consent
-3. wallet registration and two-party verification
-4. verified attendance check-in and check-out
-5. minimal leave input handling
-6. manager and HR approvals
-7. payroll calculation with conversion-rate tracking
-8. crypto payout execution with idempotent submission and attributed retry
-9. audit trail visibility and record verification
+1. public `orgx.com` package and onboarding flow
+2. tenant subdomain provisioning
+3. company setup
+4. employee onboarding with recorded consent
+5. wallet registration and two-party verification
+6. verified attendance check-in and check-out with remote work-proof support
+7. minimal leave input handling
+8. manager and HR approvals
+9. payroll calculation with conversion-rate tracking
+10. crypto payout execution with idempotent submission and attributed retry
+11. audit trail visibility and record verification
 
-## 13. Deferred Until After First Verification
+## 15. Deferred Until After First Verification
 
 Do not build these before the core flow works:
 
@@ -237,4 +282,3 @@ Do not build these before the core flow works:
 - generalized token marketplace behavior
 - built-in employee fiat conversion
 - large compliance automation modules
-- full self-serve SaaS onboarding

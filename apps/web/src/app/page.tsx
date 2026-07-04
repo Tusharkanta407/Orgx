@@ -4,16 +4,16 @@ export default function Home() {
       <div className="mx-auto flex max-w-6xl flex-col gap-12">
         <section className="flex flex-col gap-4">
           <span className="w-fit rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
-            Orgx MVP Scaffold
+            orgx.com public site scaffold
           </span>
           <div className="max-w-3xl space-y-4">
             <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-              Verified attendance, approvals, audit trail, and crypto payroll.
+              Public SaaS onboarding for workforce verification and crypto payroll.
             </h1>
             <p className="text-base leading-7 text-zinc-600 dark:text-zinc-300">
-              This frontend is scaffolded for the Orgx MVP. The next build steps
-              are employee onboarding, consent capture, wallet registration,
-              attendance flows, approval dashboards, and payout visibility.
+              This route represents `orgx.com`. Companies will discover Orgx,
+              review plans, purchase a package, and get provisioned into a
+              tenant workspace such as `cgu.orgx.com`.
             </p>
           </div>
         </section>
@@ -21,39 +21,39 @@ export default function Home() {
         <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
           {[
             {
-              title: "Employee app",
+              title: "Public site",
               items: [
-                "Consent capture",
-                "Face enrollment",
-                "Wallet registration",
-                "Check-in / check-out",
+                "Pricing and packages",
+                "Customer onboarding",
+                "Plan purchase flow",
+                "Tenant provisioning",
               ],
             },
             {
-              title: "Manager & HR",
+              title: "Tenant workspace",
               items: [
-                "Attendance review",
-                "Payroll approvals",
-                "Exception handling",
-                "Audit visibility",
+                "Employee attendance",
+                "Remote work proofs",
+                "Manager and HR review",
+                "Wallet payouts",
               ],
             },
             {
-              title: "Backend links",
+              title: "Core backend",
               items: [
-                "FastAPI health route",
+                "FastAPI APIs",
                 "Supabase Postgres",
+                "Supabase Storage",
+                "Firebase Auth",
+              ],
+            },
+            {
+              title: "Blockchain and proof",
+              items: [
                 "Audit hash chain",
                 "Payout instruction flow",
-              ],
-            },
-            {
-              title: "External services",
-              items: [
-                "Supabase",
                 "EVM RPC provider",
                 "Treasury wallet",
-                "Mock face provider first",
               ],
             },
           ].map((section) => (
@@ -74,10 +74,10 @@ export default function Home() {
         <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <h2 className="text-xl font-semibold">What to configure next</h2>
           <ol className="mt-4 space-y-3 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-            <li>1. Create a Supabase project and copy its credentials into `.env`.</li>
-            <li>2. Install workspace dependencies once disk space is available again.</li>
-            <li>3. Add the first SQLAlchemy models and Alembic migration.</li>
-            <li>4. Implement auth, company setup, and employee onboarding flows.</li>
+            <li>1. Create the Supabase and Firebase projects and copy credentials into `.env`.</li>
+            <li>2. Implement plan and tenant provisioning APIs in FastAPI.</li>
+            <li>3. Add host-aware tenant resolution for `{`tenant`}.orgx.com`.</li>
+            <li>4. Build onboarding, storage-backed work-proof, and wallet flows.</li>
           </ol>
         </section>
       </div>

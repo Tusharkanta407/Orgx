@@ -8,11 +8,28 @@ Core principles:
 
 - every business record includes `company_id`
 - operational state and audit state are stored separately
+- public SaaS onboarding state is separate from tenant operational state, but still linkable
 - historical business events should be traceable rather than overwritten without context
 - payout records must preserve on-chain references
 - wallet changes must be auditable
 - money-moving actions such as wallet activation and payout retry should have attributable approval history
 - payroll records should preserve both base-currency value and token-conversion details
+- raw media files belong in managed storage, with only metadata and references stored in core tables
+
+### Plan
+
+Represents an Orgx SaaS package offered on `orgx.com`.
+
+Suggested fields:
+
+- `id`
+- `name`
+- `status`
+- `billing_interval`
+- `price_reference`
+- `currency`
+- `created_at`
+- `updated_at`
 
 ## 2. Core Entities
 
@@ -24,9 +41,13 @@ Suggested fields:
 
 - `id`
 - `name`
+- `subdomain`
 - `status`
+- `plan_id`
+- `auth_provider`
 - `default_chain_id`
 - `approved_token_policy`
+- `attendance_policy`
 - `base_currency`
 - `created_at`
 - `updated_at`
@@ -40,7 +61,8 @@ Suggested fields:
 - `id`
 - `company_id`
 - `email`
-- `password_hash` or auth provider reference
+- `firebase_uid`
+- `auth_provider`
 - `role`
 - `status`
 - `created_at`
@@ -80,6 +102,23 @@ Suggested fields:
 - `consent_version`
 - `given_at`
 - `revoked_at`
+
+### StorageAsset
+
+Stores metadata for files uploaded to managed storage.
+
+Suggested fields:
+
+- `id`
+- `company_id`
+- `employee_id`
+- `asset_type`
+- `storage_bucket`
+- `storage_path`
+- `mime_type`
+- `uploaded_at`
+- `uploaded_by`
+- `status`
 
 ### Wallet
 
@@ -129,14 +168,32 @@ Suggested fields:
 - `company_id`
 - `employee_id`
 - `attempt_type`
+- `attendance_mode`
 - `captured_at`
 - `latitude`
 - `longitude`
 - `face_provider_ref`
 - `face_result`
 - `geofence_result`
+- `task_summary`
 - `final_status`
 - `rejection_reason_code`
+- `created_at`
+
+### WorkProofSubmission
+
+Represents remote-work proof tied to an attendance attempt.
+
+Suggested fields:
+
+- `id`
+- `company_id`
+- `employee_id`
+- `attendance_attempt_id`
+- `storage_asset_id`
+- `task_notes`
+- `submitted_at`
+- `review_status`
 - `created_at`
 
 ### AttendanceEvent
@@ -313,8 +370,10 @@ Suggested fields:
 ## 3. Relationship Notes
 
 - one company has many users, employees, locations, payroll periods, payroll runs, and audit records
+- one company maps to one tenant subdomain in the MVP
 - one employee has many attendance attempts and attendance events
 - one employee can have many leave records and many consent records
+- one employee can have many storage assets and work-proof submissions
 - one employee should have one active payout wallet in the MVP
 - one payroll period can have many payroll runs if recalculation is needed
 - one payroll run has many payroll items
@@ -329,6 +388,7 @@ To stay future-proof:
 - use compound indexes that include `company_id` where relevant
 - ensure every read and write path is company-scoped at the service layer
 - avoid global mutable configuration tables unless they are clearly system-level
+- resolve the tenant workspace from the request host or subdomain before loading company-scoped data
 
 ## 5. Audit Hash-Chain Design
 
@@ -351,6 +411,7 @@ To make record verification meaningful, the normalized audit payload should incl
 Recommended coverage for key MVP record types:
 
 - attendance acceptance or rejection: `employee_id`, `attempt_type`, `captured_at`, location coordinates or location reference, face result, geofence result, final status, and rejection reason where relevant
+- remote work-proof submission: `employee_id`, `attendance_attempt_id`, storage asset reference, task notes summary, and review status
 - payroll item readiness: `employee_id`, `payroll_run_id`, base-currency amount, conversion rate, rate source, rate timestamp, token amount, payout token, payout chain, and snapshotted wallet reference
 - payout submission or retry: `payroll_item_id`, payout instruction id, wallet address snapshot, token amount, chain id, transaction reference, retry lineage, and submission outcome
 
@@ -359,10 +420,13 @@ If any of those protected business fields change after the audit event is writte
 ## 6. Audit Events That Must Exist In MVP
 
 - employee created
+- tenant provisioned
+- public plan selected
 - consent recorded
 - wallet registered
 - wallet verification approved
 - wallet changed
+- storage asset uploaded
 - attendance accepted
 - attendance rejected
 - manager approved payroll
@@ -442,3 +506,5 @@ Retries should be modeled as new `PayoutInstruction` rows linked through `retry_
 - who the second approver is for wallet verification in the pilot
 - whether payout is direct wallet transfer or contract-based batch payout
 - retention policy for biometric consent and related employee-sensitive data
+- how `Firebase Auth` identities map into tenant-scoped `User` rows
+- how storage buckets and retention rules are split between face-enrollment media and work-proof media

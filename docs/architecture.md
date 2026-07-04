@@ -4,9 +4,11 @@
 
 The Orgx MVP architecture should:
 
-- support one pilot company while remaining tenant-ready
+- support a public SaaS site on `orgx.com` plus tenant workspaces on `{tenant}.orgx.com`
+- remain tenant-ready even if rollout starts with one pilot customer
 - provide a mobile-first employee experience and web dashboards for business roles
-- keep attendance, payroll, payout, and audit logic in a central backend
+- keep attendance, payroll, payout, tenant provisioning, and audit logic in a central backend
+- store media and work proofs in managed storage rather than on chain
 - support wallet-based crypto disbursement on `EVM`
 - preserve a tamper-evident audit trail for critical events
 - let authorized users verify attendance and payroll record integrity
@@ -15,10 +17,12 @@ The Orgx MVP architecture should:
 
 ```mermaid
 flowchart TD
-  employeeWeb[EmployeeMobileWeb] --> nextjs[NextJsWebApp]
-  managerWeb[ManagerHrAdminWeb] --> nextjs
+  publicSite[OrgxDotComPublicSite] --> nextjs[NextJsWebApp]
+  tenantSite[TenantWorkspaceSubdomain] --> nextjs
+  nextjs --> firebase[FirebaseAuth]
   nextjs --> api[FastAPIBackend]
   api --> postgres[Postgres]
+  api --> storage[SupabaseStorage]
   api --> faceProvider[FaceMatchProvider]
   api --> chainSvc[BlockchainPayoutService]
   chainSvc --> rpc[EVMRpcProvider]
@@ -34,14 +38,20 @@ flowchart TD
 
 One `Next.js` application should serve:
 
-- employee mobile-first attendance screens
+- the public `orgx.com` marketing and plan-purchase experience
+- customer onboarding and tenant provisioning flows
+- employee mobile-first attendance and work-proof screens
 - manager attendance and approval screens
 - HR approval and payout screens
 - company admin setup screens
 - audit and reporting views
+- tenant-subdomain-aware workspaces
 
 Recommended route group split:
 
+- public
+- onboarding
+- workspace
 - employee
 - manager
 - hr
@@ -51,9 +61,11 @@ Recommended route group split:
 
 One `FastAPI` service should own:
 
-- authentication and authorization
+- public SaaS onboarding and tenant provisioning
+- tenant-aware identity handling and authorization
 - company and employee data
 - attendance validation orchestration
+- remote-work proof validation orchestration
 - payroll computation
 - approval workflow
 - payout execution orchestration
@@ -62,11 +74,15 @@ One `FastAPI` service should own:
 Recommended modules:
 
 - `auth`
+- `tenants`
+- `plans`
 - `companies`
 - `users`
 - `employees`
 - `consent`
 - `locations`
+- `storage`
+- `tasks`
 - `attendance`
 - `approvals`
 - `payroll`
@@ -77,14 +93,29 @@ Recommended modules:
 
 `Postgres` is the source of truth for all operational state and audit records. It stores canonical records for:
 
-- tenants and users
+- plans, tenants, and users
 - employee and location metadata
 - employee consent records
+- daily tasks and work-proof metadata
 - attendance attempts and accepted events
 - payroll periods, runs, and line items
 - approval actions
 - payout instructions and blockchain status tracking
 - audit chain records
+
+### Storage Layer
+
+Managed storage such as `Supabase Storage` should store:
+
+- employee face-enrollment media
+- remote work-environment proof photos
+- daily proof attachments
+
+Only metadata, references, and verification results should live in `Postgres`.
+
+### Firebase Auth
+
+`Firebase Auth` should handle login, company-email sign-in, and session identity. Orgx should still manage tenant membership, roles, and authorization in its own backend.
 
 ### Face Match Provider
 
@@ -111,11 +142,25 @@ flowchart TD
   employee[Employee] -->|"checkInOrOut"| web[NextJsEmployeeFlow]
   web --> api[AttendanceApi]
   api --> face[FaceMatchProvider]
-  api --> geo[GeofenceValidation]
+  api --> storage[ProofStorage]
+  api --> task[TaskSubmission]
   face --> decision[AttendanceDecision]
-  geo --> decision
+  storage --> decision
+  task --> decision
   decision --> postgres[Postgres]
   decision --> audit[AuditLog]
+```
+
+### Public SaaS Provisioning Flow
+
+```mermaid
+flowchart TD
+  buyer[CustomerBuyer] --> publicWeb[OrgxDotCom]
+  publicWeb --> firebase[FirebaseAuth]
+  publicWeb --> api[ProvisioningApi]
+  api --> postgres[Postgres]
+  api --> tenant[ProvisionTenantSubdomain]
+  tenant --> workspace[TenantWorkspace]
 ```
 
 ### Payroll And Payout Flow
@@ -170,6 +215,8 @@ The trusted core is the Orgx backend plus the database. These components decide:
 
 External providers return signals or outcomes, but Orgx remains responsible for business decisions. These integrations include:
 
+- `Firebase Auth`
+- managed storage service
 - face-match provider
 - `EVM` RPC provider
 - wallet transaction relay or signing infrastructure
@@ -194,12 +241,15 @@ Orgx should not assume the device or wallet environment is fully trusted, so wal
 - wallet verification requires a two-party approval flow
 - on-chain transaction submission must be traceable with internal request identifiers
 - employee wallet changes should be guarded, auditable, and unable to retroactively repoint an already-generated payroll item
+- public-site onboarding must not leak tenant context across customers
+- storage access to proof media must be tenant-scoped and role-scoped
 
 ## 7. Privacy And Compliance Considerations
 
 - face and GPS data should follow a defined retention policy and only keep what is required for verification and audit
 - consent for biometric and location collection should be recorded before enrollment or capture flows depend on it
 - biometric processing through an external provider must be contractually and technically reviewed before rollout
+- work-proof photos and task attachments must remain in managed storage with explicit retention rules
 - wallet payout policy and supported tokens must be reviewed against the operating region's payroll and crypto rules
 - Orgx should not perform fiat conversion inside the MVP; employees convert externally after receipt
 - offboarding should include a defined retention or deletion path for biometric reference and consent records
@@ -211,6 +261,8 @@ The MVP can start with a simple deployment model:
 - one `Next.js` deployment
 - one `FastAPI` deployment
 - one managed `Postgres` instance
+- one managed storage service
+- one `Firebase Auth` project
 - one secure secret store for API keys and treasury credentials
 
 This keeps the operational footprint small while still leaving space for modular scaling later.
@@ -220,6 +272,18 @@ This keeps the operational footprint small while still leaving space for modular
 ### Face Verification
 
 The MVP should integrate with one face-match provider. Orgx stores enrollment status and reference metadata, but provider-specific logic must stay behind an internal abstraction.
+
+### Storage
+
+The MVP should use managed storage for employee media and work proofs. Only references and validation results should live in core tables.
+
+### Tenant Routing
+
+The frontend should support:
+
+- `orgx.com` for public acquisition and onboarding
+- `{tenant}.orgx.com` for tenant workspaces
+- host-aware request handling so the correct tenant context is resolved before workspace views render
 
 ### Wallet And Chain
 
@@ -242,6 +306,7 @@ Keep the following boundaries explicit in code and docs:
 - audit creation is part of service-layer operations, not optional UI behavior
 - blockchain integration is a provider/service concern, not spread across business modules
 - retry of a failed payout is an explicit, attributed action rather than an automatic silent resubmission
+- raw media files are never stored on chain
 
 ## 11. Open Architecture Decisions To Verify Later
 
@@ -250,3 +315,5 @@ Keep the following boundaries explicit in code and docs:
 - whether payout signing uses a direct treasury wallet, relay service, or contract-based distributor
 - who the designated second approver is for wallet verification in the first rollout
 - whether optional public-chain audit anchoring stays separate from payout-chain activity
+- how Firebase Auth tenant and custom-claim mapping should be handled for company roles
+- how wildcard subdomains will be configured in deployment

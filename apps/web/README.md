@@ -2,9 +2,11 @@
 
 This is the `Next.js` frontend for Orgx. It will host:
 
-- employee onboarding and consent capture
+- the public `orgx.com` website
+- package and customer onboarding flows
+- tenant workspaces such as `cgu.orgx.com`
+- employee onboarding, consent capture, and work-proof flows
 - wallet registration
-- mobile-first attendance check-in and check-out
 - manager and HR review screens
 - payout and audit visibility
 
@@ -28,15 +30,20 @@ Before running the app, create a root `.env` file from `.env.example` and set:
 
 - `NEXT_PUBLIC_API_URL`
 - `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_ROOT_DOMAIN`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
 
 The current page is a product scaffold only. Real flows will be added on top of the App Router structure in `src/app`.
 
 ## Next Build Targets
 
-- auth shell
-- company onboarding
+- public `orgx.com` marketing and onboarding
+- tenant host resolution
+- Firebase auth shell
 - employee onboarding and wallet connection
-- attendance capture flow
+- remote attendance and work-proof flow
 - manager and HR dashboards

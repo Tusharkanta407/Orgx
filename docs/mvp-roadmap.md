@@ -4,10 +4,11 @@
 
 Deliver a pilot-ready Orgx MVP that proves:
 
-1. verified attendance works and is written to a tamper-evident chain
-2. approvals block unauthorized payroll release and unauthorized wallet activation
-3. crypto salary payout reaches employee wallets exactly once
-4. the full process is auditable and record integrity can be verified
+1. customers can onboard through `orgx.com` and receive tenant workspaces
+2. verified attendance and remote work-proof capture work with tamper-evident audit records and proof references
+3. approvals block unauthorized payroll release and unauthorized wallet activation
+4. crypto salary payout reaches employee wallets exactly once
+5. the full process is auditable and record integrity can be verified
 
 ## Phase 0: Product Definition
 
@@ -33,7 +34,7 @@ Deliver a pilot-ready Orgx MVP that proves:
 
 - set up the monorepo layout
 - create `Next.js` and `FastAPI` application shells
-- create local development and environment conventions
+- create environment conventions for public site, tenant subdomains, storage, and auth
 
 ### Outputs
 
@@ -48,8 +49,28 @@ Deliver a pilot-ready Orgx MVP that proves:
 - frontend and backend both run locally
 - database connectivity is working
 - environment variables are documented
+- public and tenant workspace assumptions are documented
 
-## Phase 2: Identity, Company Setup, And Onboarding
+## Phase 2: SaaS Acquisition And Tenant Provisioning
+
+### Goals
+
+- support `orgx.com` onboarding and plan selection
+- provision tenant subdomains for customers
+- establish auth and tenant resolution foundations
+
+### Outputs
+
+- public marketing and onboarding flow scaffold
+- tenant provisioning flow
+- `Firebase Auth` integration plan and initial wiring
+- tenant host resolution
+
+### Exit Criteria
+
+- a customer can be provisioned into a tenant workspace
+- tenant context resolves correctly from the workspace host
+## Phase 3: Identity, Company Setup, And Onboarding
 
 ### Goals
 
@@ -65,6 +86,7 @@ Deliver a pilot-ready Orgx MVP that proves:
 - consent capture flow for biometric and location data
 - location and geofence setup
 - face enrollment metadata flow
+- proof media storage metadata flow
 - minimal leave input management
 - wallet registration with pending and verified states
 
@@ -73,13 +95,12 @@ Deliver a pilot-ready Orgx MVP that proves:
 - a pilot company can fully onboard users and employees
 - an employee has a valid wallet and enrollment-ready state
 - no wallet becomes payout-eligible without the required approval flow
-
-## Phase 3: Attendance Flow
+## Phase 4: Attendance Flow
 
 ### Goals
 
 - implement the core employee experience
-- validate face and geofence checks
+- validate face and remote proof checks
 - record accepted and rejected attempts
 - make accepted records verifiable against the audit chain
 
@@ -87,6 +108,7 @@ Deliver a pilot-ready Orgx MVP that proves:
 
 - mobile-first check-in and check-out flow
 - attendance validation service
+- remote-work proof capture and storage flow
 - attendance review screens
 - audit logging for attendance events
 - on-demand verification for individual attendance records
@@ -97,8 +119,7 @@ Deliver a pilot-ready Orgx MVP that proves:
 - failed validation returns a visible reason
 - attendance history and audit entries are visible to authorized roles
 - an accepted attendance record can be recomputed and verified on demand
-
-## Phase 4: Payroll And Approval Flow
+## Phase 5: Payroll And Approval Flow
 
 ### Goals
 
@@ -121,7 +142,7 @@ Deliver a pilot-ready Orgx MVP that proves:
 - payout cannot start before both approvals exist
 - each payout-ready payroll item shows both its base-currency value and token conversion details
 
-## Phase 5: Crypto Payout
+## Phase 6: Crypto Payout
 
 ### Goals
 
@@ -143,7 +164,7 @@ Deliver a pilot-ready Orgx MVP that proves:
 - transaction hash and status are stored and visible
 - a duplicate submission or retry cannot result in a second payment for the same payroll item
 
-## Phase 6: Hardening And Verification
+## Phase 7: Hardening And Verification
 
 ### Goals
 
@@ -182,11 +203,11 @@ Apps scaffolded and database connected.
 
 ### Milestone C
 
-Employee onboarding, consent capture, and attendance flow working end to end.
+Public onboarding, tenant provisioning, and employee attendance flow working end to end.
 
 ### Milestone D
 
-Payroll, approvals, and conversion-rate tracking working end to end.
+Payroll, approvals, remote proof capture, and conversion-rate tracking working end to end.
 
 ### Milestone E
 
@@ -201,6 +222,7 @@ Pilot readiness with named tests, seed data, and audit verification.
 Before expanding features, verify:
 
 - employee mobile web usability
+- public-site conversion and tenant onboarding usability
 - face-match reliability in real usage
 - wallet registration, approval, and payout usability
 - payout tracking accuracy and idempotency under real network conditions
@@ -210,7 +232,6 @@ Before expanding features, verify:
 
 Once the pilot flow is stable, the next roadmap can include:
 
-- multi-tenant self-serve onboarding
 - more chains and tokens
 - stronger fraud checks
 - richer payroll configuration

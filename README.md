@@ -4,9 +4,9 @@ Orgx is a B2B SaaS workforce platform where companies buy and manage plans on `o
 
 The platform is designed for multi-tenant SaaS from the beginning:
 
-- `orgx.com` is the public business site for pricing, signup, package purchase, and customer onboarding
-- `{tenant}.orgx.com` is the employee workspace (login, attendance, work proofs, payout view)
-- `{tenant}.admin.orgx.com` is the tenant admin workspace (employees, settings, approvals, payroll review)
+- `orgx.com` is the public B2B SaaS site (product, plans, pricing, org signup, login, and payment)
+- after payment, the buying company gets an **org dashboard** on `orgx.com` (employees, settings, approvals, payroll)
+- `{tenant}.orgx.com` is the **employee workspace** only (login, attendance, work proofs, payout view)
 - `FastAPI` owns tenant logic, attendance validation, payroll, payouts, and audit flows
 - `Supabase Postgres` stores the operational source of truth
 - `Supabase Storage` stores images and work-proof media
@@ -31,18 +31,19 @@ A company discovers Orgx on the public website, reviews packages, submits busine
 Example:
 
 - company signs up on `orgx.com`
-- company chooses a plan
-- Orgx provisions `cgu.orgx.com`
-- company admin receives access to the new tenant dashboard
+- company chooses a plan and pays
+- Orgx provisions the org dashboard and employee subdomain (e.g. `cgu.orgx.com`)
+- company admin manages the org from the dashboard on `orgx.com`
+- employees use `cgu.orgx.com` for daily work
 
-### 2. Tenant workspaces
+### 2. Two surfaces
 
 | Host | Purpose |
 |------|---------|
-| `cgu.orgx.com` | employees — attendance and daily workflow |
-| `cgu.admin.orgx.com` | tenant admin, HR, managers — setup and approvals |
+| `orgx.com` | public marketing, plans, org signup/login, payment, and org dashboard after purchase |
+| `cgu.orgx.com` | employees — attendance and daily workflow (`cgu` is just an example tenant slug) |
 
-Company admins manage the tenant on the admin subdomain. Employees use the tenant subdomain only for their work loop.
+Company admins, HR, and managers work from the org dashboard on `orgx.com`. Employees use the tenant subdomain only.
 
 ## Attendance Modes
 

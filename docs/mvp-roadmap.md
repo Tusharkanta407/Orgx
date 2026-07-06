@@ -4,9 +4,10 @@
 
 Deliver a pilot-ready Orgx MVP that proves:
 
-1. a tenant can be provisioned with working subdomains: `{tenant}.orgx.com` for employees and `{tenant}.admin.orgx.com` for tenant admins
-2. employees can log in on the tenant workspace and complete the attendance / work-proof workflow
-3. tenant admins can manage employees and review operations from the admin subdomain
+1. `orgx.com` works as a B2B SaaS site (product, plans, org signup, login, payment)
+2. after payment, the buying org gets a dashboard on `orgx.com` and a tenant subdomain such as `cgu.orgx.com`
+3. employees can log in on `{tenant}.orgx.com` and complete the attendance / work-proof workflow
+4. org admins can manage employees and operations from the org dashboard on `orgx.com`
 4. verified attendance and remote work-proof capture work with tamper-evident audit records
 5. approvals block unauthorized payroll release and unauthorized wallet activation
 6. crypto salary payout reaches employee wallets exactly once (see `docs/blockchain.md`)
@@ -18,49 +19,53 @@ The project succeeds when:
 
 | Surface | Host | Who uses it |
 |--------|------|-------------|
-| Public site | `orgx.com` | prospects, signup (can be simplified early) |
+| Public SaaS | `orgx.com` | prospects — product, plans, signup, login, payment |
+| Org dashboard | `orgx.com` (logged-in) | company admin, HR, managers — employees, policies, approvals |
 | Employee workspace | `cgu.orgx.com` | employees — login, attendance, work proofs, payout view |
-| Tenant admin | `cgu.admin.orgx.com` | company admin, HR, managers — employees, policies, approvals |
 
-Generating the tenant subdomains and making both workspaces usable is the core org-side success metric. Employee workflows only matter once a tenant exists.
+Success = a company can buy on `orgx.com`, land in the org dashboard, and employees can use `{tenant}.orgx.com`. (`cgu` is an example slug only.)
 
 ## Recommended Build Order
 
-Build in this order—not employee-first in isolation, and not full public marketing before tenant works.
+Build in this order — public SaaS and org onboarding first, then employee subdomain.
 
-### Step 1 — Tenant foundation (org side, minimal)
+### Step 1 — Public B2B website (`orgx.com`)
 
-- tenant record + subdomain slug (`cgu`)
-- host resolution for `{tenant}.orgx.com` and `{tenant}.admin.orgx.com`
-- Firebase Auth wiring + Orgx role mapping
-- manual or API-based tenant provisioning for pilot
+- product pages, features, pricing / plans
+- marketing layout and clear SaaS positioning
 
-**Why first:** without this, there is no `cgu.orgx.com` for employees to use.
+**Why first:** this is how companies discover and understand Orgx.
 
-### Step 2 — Tenant admin (org side, operational)
+### Step 2 — Org signup, login, and payment
 
-- `{tenant}.admin.orgx.com` dashboard shell
-- create / list employees
-- basic tenant settings and attendance policy flags
-- consent and onboarding status visibility
+- org account creation on `orgx.com`
+- Firebase Auth for org users
+- plan selection and payment (can start with manual / pilot billing)
 
-**Why second:** admins must add employees before the employee app is meaningful.
+**Why second:** a company must sign up and pay before they get a workspace.
 
-### Step 3 — Employee workspace (employee side)
+### Step 3 — Provision tenant + org dashboard
 
-- `{tenant}.orgx.com` mobile-first flow
-- login, consent, face enrollment metadata, check-in / check-out
-- remote work-proof upload (storage) + task notes
-- attendance history for the employee
+- create `Company` record with subdomain slug (e.g. `cgu`)
+- after payment, show org dashboard on `orgx.com`
+- org admin can add employees, basic settings, see tenant URL `cgu.orgx.com`
 
-**Why third:** this is the main daily-use loop, but it depends on Step 1 and 2.
+**Why third:** the org dashboard is where admins set up the company before employees start.
 
-### Step 4 — Approvals and payroll (admin + backend)
+### Step 4 — Employee workspace (`{tenant}.orgx.com`)
+
+- employee login on tenant subdomain
+- consent, check-in / check-out, remote work proofs
+- attendance history and payout view
+
+**Why fourth:** employees need the org to exist and admins to add them first.
+
+### Step 5 — Approvals and payroll (org dashboard + backend)
 
 - manager / HR approval gates
 - payroll period and payout-ready items
 
-### Step 5 — Blockchain (see `docs/blockchain.md`)
+### Step 6 — Blockchain (see `docs/blockchain.md`)
 
 - ERC-20 payout + `tx_hash` tracking
 - audit root anchoring via `OrgxAnchor`
@@ -107,43 +112,46 @@ Build in this order—not employee-first in isolation, and not full public marke
 - environment variables are documented
 - public and tenant workspace assumptions are documented
 
-## Phase 2: Tenant Provisioning And Subdomains
+## Phase 2: Public SaaS, Payment, And Tenant Provisioning
 
 ### Goals
 
-- provision tenant subdomains for customers
-- resolve `{tenant}.orgx.com` and `{tenant}.admin.orgx.com` correctly
-- establish `Firebase Auth` and Orgx role mapping
+- complete the public B2B site on `orgx.com`
+- org signup, login, and payment
+- provision tenant subdomain and org dashboard after purchase
 
 ### Outputs
 
-- tenant provisioning API and data model
-- host resolution for employee and admin subdomains
-- `Firebase Auth` integration and session exchange with FastAPI
-- minimal public signup path on `orgx.com` (can stay thin until later)
+- product and pricing pages on `orgx.com`
+- org signup and payment flow
+- tenant provisioning API and `Company` data model
+- org dashboard on `orgx.com` (logged-in area)
+- host resolution for `{tenant}.orgx.com`
+- `Firebase Auth` integration and Orgx role mapping
 
 ### Exit Criteria
 
-- provisioning `cgu` yields `cgu.orgx.com` and `cgu.admin.orgx.com`
-- tenant context resolves correctly from both host patterns
-- a tenant admin user can access the admin subdomain
+- a company can sign up, pay, and land in the org dashboard on `orgx.com`
+- provisioning `cgu` yields a working `cgu.orgx.com` employee URL
+- org admin can add an employee from the dashboard
 
-## Phase 2b: Tenant Admin Dashboard
+## Phase 2b: Org Dashboard
 
 ### Goals
 
-- give tenant admins a real control surface on `{tenant}.admin.orgx.com`
+- give company admins a real control surface on `orgx.com` after login
 
 ### Outputs
 
-- admin dashboard shell
+- org dashboard shell
 - employee CRUD
 - tenant settings (attendance mode, base currency placeholder)
 - view onboarding / consent status per employee
+- display employee workspace URL (`{tenant}.orgx.com`)
 
 ### Exit Criteria
 
-- tenant admin can add an employee email and see them in the system
+- org admin can add an employee email and see them in the system
 - employee record exists before the employee opens `{tenant}.orgx.com`
 ## Phase 3: Identity, Company Setup, And Onboarding
 
@@ -301,7 +309,7 @@ Apps scaffolded and database connected.
 
 ### Milestone C
 
-Tenant provisioned: `cgu.orgx.com` + `cgu.admin.orgx.com` resolving; admin can add employees.
+Tenant provisioned: company paid on `orgx.com`, org dashboard live, `cgu.orgx.com` resolving; admin can add employees.
 
 ### Milestone D
 

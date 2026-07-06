@@ -10,8 +10,7 @@ export function middleware(request: NextRequest) {
   const tenant = resolveTenantFromHost(host, rootDomain);
 
   if (tenant) {
-    requestHeaders.set("x-orgx-tenant", tenant.slug);
-    requestHeaders.set("x-orgx-surface", tenant.surface);
+    requestHeaders.set("x-orgx-tenant", tenant);
   }
 
   return NextResponse.next({

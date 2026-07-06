@@ -145,9 +145,8 @@ Full design: `docs/blockchain.md`.
 
 | Host | Surface |
 |------|---------|
-| `orgx.com` | public marketing and signup |
-| `{tenant}.orgx.com` | employee workspace |
-| `{tenant}.admin.orgx.com` | tenant admin, HR, manager dashboards |
+| `orgx.com` | public B2B SaaS — product, plans, org signup, login, payment, and org dashboard |
+| `{tenant}.orgx.com` | employee workspace only |
 
 ### Attendance Flow
 
@@ -171,11 +170,12 @@ flowchart TD
 flowchart TD
   buyer[CustomerBuyer] --> publicWeb[OrgxDotCom]
   publicWeb --> firebase[FirebaseAuth]
-  publicWeb --> api[ProvisioningApi]
+  publicWeb --> payment[Payment]
+  payment --> api[ProvisioningApi]
   api --> postgres[Postgres]
-  api --> tenant[ProvisionTenantSubdomains]
+  api --> dashboard[OrgDashboardOnOrgxDotCom]
+  api --> tenant[ProvisionEmployeeSubdomain]
   tenant --> employeeHost["tenant.orgx.com"]
-  tenant --> adminHost["tenant.admin.orgx.com"]
 ```
 
 ### Payroll And Payout Flow
@@ -297,9 +297,9 @@ The MVP should use managed storage for employee media and work proofs. Only refe
 The frontend should support:
 
 - `orgx.com` for public acquisition and onboarding
+- `orgx.com` for the public B2B site and org dashboard (logged-in company admins)
 - `{tenant}.orgx.com` for employee workspaces
-- `{tenant}.admin.orgx.com` for tenant admin workspaces
-- host-aware request handling so the correct tenant context and surface are resolved before views render
+- host-aware request handling so tenant context resolves on employee subdomains
 
 ### Wallet And Chain
 

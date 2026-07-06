@@ -97,7 +97,7 @@ Target network for MVP: Polygon Amoy (testnet), stablecoin-first.
 ## Frontend
 
 - `{tenant}.orgx.com` — employee workflow; show payout `tx_hash` and verification status where relevant
-- `{tenant}.admin.orgx.com` — tenant admin; approvals and payroll review
+- `orgx.com` (org dashboard) — approvals and payroll review for company admins
 - `orgx.com/verify` — public payslip hash verification (queries `OrgxAnchor.payslipHashes`)
 
 ## What Stays Off-Chain
@@ -111,7 +111,7 @@ Target network for MVP: Polygon Amoy (testnet), stablecoin-first.
 
 Do **not** start blockchain work before:
 
-1. tenant subdomain provisioning works (`{tenant}.orgx.com` and `{tenant}.admin.orgx.com`)
+1. org can sign up, pay, and get `{tenant}.orgx.com` provisioned
 2. employee attendance flow works off-chain
 3. payroll approval flow works off-chain
 

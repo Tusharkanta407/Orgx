@@ -5,7 +5,8 @@ Orgx is a B2B SaaS workforce platform where companies buy and manage plans on `o
 The platform is designed for multi-tenant SaaS from the beginning:
 
 - `orgx.com` is the public business site for pricing, signup, package purchase, and customer onboarding
-- `{tenant}.orgx.com` is the customer workspace where company admins, managers, HR, and employees use the product
+- `{tenant}.orgx.com` is the employee workspace (login, attendance, work proofs, payout view)
+- `{tenant}.admin.orgx.com` is the tenant admin workspace (employees, settings, approvals, payroll review)
 - `FastAPI` owns tenant logic, attendance validation, payroll, payouts, and audit flows
 - `Supabase Postgres` stores the operational source of truth
 - `Supabase Storage` stores images and work-proof media
@@ -34,14 +35,14 @@ Example:
 - Orgx provisions `cgu.orgx.com`
 - company admin receives access to the new tenant dashboard
 
-### 2. Tenant workspace on `{tenant}.orgx.com`
+### 2. Tenant workspaces
 
-The tenant workspace is where company users do the real work:
+| Host | Purpose |
+|------|---------|
+| `cgu.orgx.com` | employees — attendance and daily workflow |
+| `cgu.admin.orgx.com` | tenant admin, HR, managers — setup and approvals |
 
-- company admin manages the tenant and employees
-- employees log in with company email through the configured identity flow
-- managers review attendance and approvals
-- HR reviews payroll and payout records
+Company admins manage the tenant on the admin subdomain. Employees use the tenant subdomain only for their work loop.
 
 ## Attendance Modes
 
@@ -121,6 +122,7 @@ The detailed product docs live in:
 - `docs/data-model.md`
 - `docs/api-spec.md`
 - `docs/mvp-roadmap.md`
+- `docs/blockchain.md`
 
 ## Status
 

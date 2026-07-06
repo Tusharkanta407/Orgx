@@ -133,7 +133,21 @@ This service layer is responsible for:
 
 For the MVP, the chain service should target one `EVM` network and a limited token allowlist.
 
-## 4. Data And Control Flow
+### Blockchain (hybrid model)
+
+Full design: `docs/blockchain.md`.
+
+- **Payouts**: direct ERC-20 transfer from treasury wallet—not a payroll smart contract.
+- **Proof**: `OrgxAnchor` registry contract for attendance roots, audit roots, and payslip PDF hashes.
+- **Operations**: approvals, payroll rules, and attendance validation remain off-chain in FastAPI + Postgres.
+
+### Tenant host model
+
+| Host | Surface |
+|------|---------|
+| `orgx.com` | public marketing and signup |
+| `{tenant}.orgx.com` | employee workspace |
+| `{tenant}.admin.orgx.com` | tenant admin, HR, manager dashboards |
 
 ### Attendance Flow
 
@@ -159,8 +173,9 @@ flowchart TD
   publicWeb --> firebase[FirebaseAuth]
   publicWeb --> api[ProvisioningApi]
   api --> postgres[Postgres]
-  api --> tenant[ProvisionTenantSubdomain]
-  tenant --> workspace[TenantWorkspace]
+  api --> tenant[ProvisionTenantSubdomains]
+  tenant --> employeeHost["tenant.orgx.com"]
+  tenant --> adminHost["tenant.admin.orgx.com"]
 ```
 
 ### Payroll And Payout Flow
@@ -282,8 +297,9 @@ The MVP should use managed storage for employee media and work proofs. Only refe
 The frontend should support:
 
 - `orgx.com` for public acquisition and onboarding
-- `{tenant}.orgx.com` for tenant workspaces
-- host-aware request handling so the correct tenant context is resolved before workspace views render
+- `{tenant}.orgx.com` for employee workspaces
+- `{tenant}.admin.orgx.com` for tenant admin workspaces
+- host-aware request handling so the correct tenant context and surface are resolved before views render
 
 ### Wallet And Chain
 

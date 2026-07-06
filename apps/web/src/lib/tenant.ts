@@ -1,4 +1,19 @@
-export function resolveTenantFromHost(host: string, rootDomain: string) {
+export type TenantSurface = "employee" | "admin";
+
+export type TenantContext = {
+  slug: string;
+  surface: TenantSurface;
+};
+
+/**
+ * Resolve tenant from host patterns:
+ * - cgu.orgx.com -> employee workspace
+ * - cgu.admin.orgx.com -> tenant admin dashboard
+ */
+export function resolveTenantFromHost(
+  host: string,
+  rootDomain: string,
+): TenantContext | null {
   if (!host || !rootDomain) {
     return null;
   }
@@ -13,8 +28,20 @@ export function resolveTenantFromHost(host: string, rootDomain: string) {
     return null;
   }
 
+  const adminSuffix = `.admin.${normalizedRoot}`;
+  if (normalizedHost.endsWith(adminSuffix)) {
+    const slug = normalizedHost.slice(0, -adminSuffix.length);
+    if (slug && !slug.includes(".")) {
+      return { slug, surface: "admin" };
+    }
+    return null;
+  }
+
   if (normalizedHost.endsWith(`.${normalizedRoot}`)) {
-    return normalizedHost.slice(0, -(`.${normalizedRoot}`).length);
+    const slug = normalizedHost.slice(0, -(`.${normalizedRoot}`).length);
+    if (slug && !slug.includes(".")) {
+      return { slug, surface: "employee" };
+    }
   }
 
   return null;

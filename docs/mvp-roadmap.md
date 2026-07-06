@@ -4,11 +4,67 @@
 
 Deliver a pilot-ready Orgx MVP that proves:
 
-1. customers can onboard through `orgx.com` and receive tenant workspaces
-2. verified attendance and remote work-proof capture work with tamper-evident audit records and proof references
-3. approvals block unauthorized payroll release and unauthorized wallet activation
-4. crypto salary payout reaches employee wallets exactly once
-5. the full process is auditable and record integrity can be verified
+1. a tenant can be provisioned with working subdomains: `{tenant}.orgx.com` for employees and `{tenant}.admin.orgx.com` for tenant admins
+2. employees can log in on the tenant workspace and complete the attendance / work-proof workflow
+3. tenant admins can manage employees and review operations from the admin subdomain
+4. verified attendance and remote work-proof capture work with tamper-evident audit records
+5. approvals block unauthorized payroll release and unauthorized wallet activation
+6. crypto salary payout reaches employee wallets exactly once (see `docs/blockchain.md`)
+7. optional on-chain proof anchoring and payslip verification after the core loop is stable
+
+## Success Definition (Product)
+
+The project succeeds when:
+
+| Surface | Host | Who uses it |
+|--------|------|-------------|
+| Public site | `orgx.com` | prospects, signup (can be simplified early) |
+| Employee workspace | `cgu.orgx.com` | employees — login, attendance, work proofs, payout view |
+| Tenant admin | `cgu.admin.orgx.com` | company admin, HR, managers — employees, policies, approvals |
+
+Generating the tenant subdomains and making both workspaces usable is the core org-side success metric. Employee workflows only matter once a tenant exists.
+
+## Recommended Build Order
+
+Build in this order—not employee-first in isolation, and not full public marketing before tenant works.
+
+### Step 1 — Tenant foundation (org side, minimal)
+
+- tenant record + subdomain slug (`cgu`)
+- host resolution for `{tenant}.orgx.com` and `{tenant}.admin.orgx.com`
+- Firebase Auth wiring + Orgx role mapping
+- manual or API-based tenant provisioning for pilot
+
+**Why first:** without this, there is no `cgu.orgx.com` for employees to use.
+
+### Step 2 — Tenant admin (org side, operational)
+
+- `{tenant}.admin.orgx.com` dashboard shell
+- create / list employees
+- basic tenant settings and attendance policy flags
+- consent and onboarding status visibility
+
+**Why second:** admins must add employees before the employee app is meaningful.
+
+### Step 3 — Employee workspace (employee side)
+
+- `{tenant}.orgx.com` mobile-first flow
+- login, consent, face enrollment metadata, check-in / check-out
+- remote work-proof upload (storage) + task notes
+- attendance history for the employee
+
+**Why third:** this is the main daily-use loop, but it depends on Step 1 and 2.
+
+### Step 4 — Approvals and payroll (admin + backend)
+
+- manager / HR approval gates
+- payroll period and payout-ready items
+
+### Step 5 — Blockchain (see `docs/blockchain.md`)
+
+- ERC-20 payout + `tx_hash` tracking
+- audit root anchoring via `OrgxAnchor`
+- payslip hash verification last
 
 ## Phase 0: Product Definition
 
@@ -51,25 +107,44 @@ Deliver a pilot-ready Orgx MVP that proves:
 - environment variables are documented
 - public and tenant workspace assumptions are documented
 
-## Phase 2: SaaS Acquisition And Tenant Provisioning
+## Phase 2: Tenant Provisioning And Subdomains
 
 ### Goals
 
-- support `orgx.com` onboarding and plan selection
 - provision tenant subdomains for customers
-- establish auth and tenant resolution foundations
+- resolve `{tenant}.orgx.com` and `{tenant}.admin.orgx.com` correctly
+- establish `Firebase Auth` and Orgx role mapping
 
 ### Outputs
 
-- public marketing and onboarding flow scaffold
-- tenant provisioning flow
-- `Firebase Auth` integration plan and initial wiring
-- tenant host resolution
+- tenant provisioning API and data model
+- host resolution for employee and admin subdomains
+- `Firebase Auth` integration and session exchange with FastAPI
+- minimal public signup path on `orgx.com` (can stay thin until later)
 
 ### Exit Criteria
 
-- a customer can be provisioned into a tenant workspace
-- tenant context resolves correctly from the workspace host
+- provisioning `cgu` yields `cgu.orgx.com` and `cgu.admin.orgx.com`
+- tenant context resolves correctly from both host patterns
+- a tenant admin user can access the admin subdomain
+
+## Phase 2b: Tenant Admin Dashboard
+
+### Goals
+
+- give tenant admins a real control surface on `{tenant}.admin.orgx.com`
+
+### Outputs
+
+- admin dashboard shell
+- employee CRUD
+- tenant settings (attendance mode, base currency placeholder)
+- view onboarding / consent status per employee
+
+### Exit Criteria
+
+- tenant admin can add an employee email and see them in the system
+- employee record exists before the employee opens `{tenant}.orgx.com`
 ## Phase 3: Identity, Company Setup, And Onboarding
 
 ### Goals
@@ -144,19 +219,21 @@ Deliver a pilot-ready Orgx MVP that proves:
 
 ## Phase 6: Crypto Payout
 
+See `docs/blockchain.md` for full design.
+
 ### Goals
 
-- execute approved payout instructions to employee wallets
+- execute approved payout instructions via direct ERC-20 transfer (not payroll smart contract)
 - track on-chain transaction state
 - guarantee that duplicate submission or retry cannot double-pay a payroll item
 
 ### Outputs
 
+- `apps/api/app/services/blockchain.py` — payout execution
 - payout instruction creation from payout-ready payroll items with immutable settlement snapshots
-- `EVM` transaction submission
-- transaction status tracking
+- `EVM` transaction submission and `BlockchainTransaction` records
 - explicit, attributable retry flow with lineage to the original instruction
-- employee payout visibility
+- employee payout visibility on `{tenant}.orgx.com`
 
 ### Exit Criteria
 
@@ -164,7 +241,28 @@ Deliver a pilot-ready Orgx MVP that proves:
 - transaction hash and status are stored and visible
 - a duplicate submission or retry cannot result in a second payment for the same payroll item
 
-## Phase 7: Hardening And Verification
+## Phase 7: On-Chain Proof And Payslips
+
+### Goals
+
+- deploy `OrgxAnchor` registry contract on testnet
+- anchor periodic attendance and audit roots
+- optional payslip hash registration and `orgx.com/verify` portal
+
+### Outputs
+
+- `contracts/OrgxAnchor.sol`
+- periodic anchoring background job
+- `apps/api/app/services/payslip.py` (PDF + hash registration)
+- `apps/web/src/app/verify/page.tsx`
+
+### Exit Criteria
+
+- audit root can be anchored and verified against chain state
+- payslip hash verifies on `/verify` after registration
+- tampered payslip fails verification
+
+## Phase 8: Hardening And Verification
 
 ### Goals
 
@@ -203,17 +301,25 @@ Apps scaffolded and database connected.
 
 ### Milestone C
 
-Public onboarding, tenant provisioning, and employee attendance flow working end to end.
+Tenant provisioned: `cgu.orgx.com` + `cgu.admin.orgx.com` resolving; admin can add employees.
 
 ### Milestone D
 
-Payroll, approvals, remote proof capture, and conversion-rate tracking working end to end.
+Employee attendance and remote proof flow working on `cgu.orgx.com`.
 
 ### Milestone E
 
-Crypto payout working on the first supported chain with idempotency proven under retry.
+Payroll, approvals, and conversion-rate tracking working end to end.
 
 ### Milestone F
+
+Crypto payout (ERC-20) working on testnet with idempotency proven under retry.
+
+### Milestone G
+
+`OrgxAnchor` anchoring and payslip verify (if in scope for pilot).
+
+### Milestone H
 
 Pilot readiness with named tests, seed data, and audit verification.
 
